@@ -1,0 +1,5 @@
+*.o
+*.d
+*~
+daemon-manager
+dmctl
