@@ -36,7 +36,7 @@ static void dump_config(struct master_config config);
 
 int main(int argc, char **argv)
 {
-    string config_path("/etc/weblet/daemon-manager.conf");
+    string config_path("/etc/daemon-manager/daemon-manager.conf");
     int verbose;
     bool foreground;
     bool debug;
