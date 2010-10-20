@@ -63,7 +63,7 @@ int main(int argc, char **argv)
 
     for (int ch; (ch = getopt_long(argc, argv, shortopts, opts, NULL)) != -1;) {
         switch (ch) {
-            case 'h': usage(argv[0], 0); break;
+            case 'h': usage(argv[0], EXIT_SUCCESS); break;
             case 'c': config_path = string(optarg); break;
             case 'v': verbose++; break;
             case 'f': foreground = true; break;
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
     if (argc != optind) {
         fprintf(stderr, "Too many arguments.\n");
-        usage(argv[0], 1);
+        usage(argv[0], EXIT_FAILURE);
     }
 
     init_log(!debug, min(LOG_DEBUG, LOG_NOTICE + verbose));
@@ -85,7 +85,7 @@ int main(int argc, char **argv)
         config = parse_master_config(config_path);
     } catch(std::string e) {
         log(LOG_ERR, "Couldn't load config file: %s\n", e.c_str());
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     vector<user*> users = user_list_from_config(config);
