@@ -218,6 +218,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                     (*d)->reap();
                     try { (*d)->start(true); }
                     catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                    break;
                 }
         }
     }
