@@ -123,6 +123,10 @@ void daemon::stop()
         log(LOG_INFO, "Stopping [%d] %s\n", pid, id().c_str());
         kill(pid, SIGTERM);
     }
-    pid = 0;
     respawns = 0;
+}
+
+void daemon::reap()
+{
+    pid = 0;
 }

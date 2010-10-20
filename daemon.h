@@ -34,6 +34,7 @@ class daemon {
 
     void start(bool respawn=false);
     void stop();
+    void reap();
 };
 
 

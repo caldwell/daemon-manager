@@ -210,12 +210,15 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                     }
                 }
         }
+        // Reap/respawn our children
         for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
             log(LOG_NOTICE, "Child %d exited\n", kid);
             for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-                if ((*d)->pid == kid)
+                if ((*d)->pid == kid) {
+                    (*d)->reap();
                     try { (*d)->start(true); }
                     catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                }
         }
     }
 }
