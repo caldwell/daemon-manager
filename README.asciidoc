@@ -1,0 +1,69 @@
+Daemon Manager
+--------------
+
+Daemon Manager allows non-root users to start and stop their own daemons. It
+is perfect for running FastCGI servers, torrent servers, or any other daemon
+that isn't meant to run in the root context.
+
+
+Availability
+~~~~~~~~~~~~
+
+Daemon Manager will monitor processes and restart a daemon if it exits or
+crashes.
+
+
+Security
+~~~~~~~~
+
+Daemon Manager allows the system administrator to decide which users can
+launch daemons and what users they are allowed to launch daemons as. For
+instance, it is common to launch FastCGI servers as a different user
+("www-data" on Debian or Ubuntu, "apache" on Fedora).
+
+Users are only allowed to see and control daemons which they have been given
+access to by the system administrator.
+
+
+Similarities
+~~~~~~~~~~~~
+
+There are many other programs out there that manage daemons. Daemon Manager
+has many similarities with upstart, systemd, supervise (daemon-tools), and
+System V init scripts but it has a different feature set and is not designed
+to replace any of those. Here are some similarities and differences:
+
+    * Like upstart, systemd and supervise, Daemon Manager will respawn a
+      daemon that exits prematurely.
+
+    * Like standard system V init scripts, there are no dependencies.
+
+    * Users can be given control of their own daemons. These daemons may run
+      as the user or as any other user on the system (if the system
+      administrator gives them permission).
+
+    * Special users can be given control over other users daemons (think
+      help desk operators at a hosting company).
+
+    * Configuration is very simple. Daemon config files are generally 4
+      lines or fewer in length.
+
+
+Rationale
+~~~~~~~~~
+
+Daemon Manager was originally conceived as a way to keep track of the myriad
+FastCGI servers on machines that host a number of heterogeneous web sites
+using servers like Lighttpd and Nginx. It became obvious as work progressed
+that the program wouldn't be specific to just FastCGI daemons, but that
+there were many uses cases for daemons that a user might want to run as
+themselves (or another non-privileged user) and control themselves.
+
+
+Author, Copyright, and License
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Copyright © 2010 by David Caldwell <david@porkrind.org>
+
+Daemon Manager is licensed under the GNU General Public License (v3.0). See
+the LICENSE file for details.
