@@ -11,10 +11,11 @@
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <algorithm>
 
 using namespace std;
 
-daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user), state(stopped)
+daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user), state(stopped), cooldown(0)
 {
     load_config();
 }
@@ -128,7 +129,27 @@ void daemon::stop()
     state = stopped;
 }
 
+
+void daemon::respawn()
+{
+    time_t now = time(NULL);
+    time_t uptime = now - respawn_time;
+    if (uptime < 60) cooldown = min((time_t)60, cooldown + 10); // back off if it's dying too often
+    if (uptime > 60) cooldown = 0; // Clear cooldown on good behavior
+    if (cooldown) {
+        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id().c_str(), cooldown);
+        cooldown_start = now;
+        state = coolingdown;
+    } else
+        start(true);
+}
+
 void daemon::reap()
 {
     pid = 0;
+}
+
+time_t daemon::cooldown_remaining()
+{
+    return max((time_t)0, cooldown - (time(NULL) - cooldown_start));
 }

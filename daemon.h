@@ -6,7 +6,7 @@
 #include <string>
 #include <time.h>
 
-enum run_state { stopped, running };
+enum run_state { stopped, running, coolingdown };
 
 class daemon {
   public:
@@ -24,6 +24,8 @@ class daemon {
 
     // stats:
     run_state state;
+    time_t cooldown;
+    time_t cooldown_start;
     size_t respawns;
     time_t start_time;
     time_t respawn_time;
@@ -37,7 +39,10 @@ class daemon {
 
     void start(bool respawn=false);
     void stop();
+    void respawn();
     void reap();
+
+    time_t cooldown_remaining();
 };
 
 
