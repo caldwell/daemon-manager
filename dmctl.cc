@@ -27,7 +27,7 @@ int main(int argc, char **argv)
         me = new user(getuid());
         me->open_fifos(true);
     } catch (string e) {
-        errc(1, 0, "Error: %s\n", e.c_str());
+        errx(1, "Error: %s\n", e.c_str());
     }
 
     string command = argv[1];
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
         command += string(" ") + argv[2];
     int wrote = write(me->fifo_req_wr, command.c_str(), command.length());
     if (wrote < 0) err(1,  "daemon-manager does not appear to be running.");
-    if (!wrote) errc(1, 0, "daemon-manager does not appear to be running.");
+    if (!wrote)   errx(1, "daemon-manager does not appear to be running.");
 
     // Drain the FIFO
     char buf[1000];
@@ -50,8 +50,8 @@ int main(int argc, char **argv)
     if (got == 0) err(1, "Poll timed out.");
 
     int red = read(me->fifo_resp_rd, buf, sizeof(buf)-1);
-    if (red < 0) err(1, "no response from daemon-manager");
-    if (red == 0) errc(1, 0, "no response from daemon-manager.");
+    if (red < 0)   err(1, "no response from daemon-manager");
+    if (red == 0) errx(1, "no response from daemon-manager.");
 
     buf[red] = '\0';
     if (strcmp(buf, "OK\n") == 0) exit(0);
