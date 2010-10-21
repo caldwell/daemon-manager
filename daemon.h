@@ -7,6 +7,7 @@
 #include <time.h>
 
 enum run_state { stopped, stopping, running, coolingdown };
+const std::string _state_str[] = { "stopped", "stopping", "running", "coolingdown" };
 
 class daemon {
   public:
@@ -36,6 +37,7 @@ class daemon {
     std::string id();
     std::string sock_file();
     void create_sock_dir();
+    std::string state_str() { return _state_str[state]; }
 
     void start(bool respawn=false);
     void stop();
