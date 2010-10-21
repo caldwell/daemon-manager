@@ -348,6 +348,15 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         return "OK: " + resp;
     }
 
+    if (cmd == "rescan") {
+        vector<class daemon*> new_daemons = load_daemons(user->manages, *daemons);
+        if (new_daemons.size() == 0)
+            return "OK: No new daemons found.\n";
+        daemons->insert(daemons->end(), new_daemons.begin(), new_daemons.end());
+        autostart(new_daemons);
+        return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n";
+    }
+
     try {
         class daemon *daemon;
         for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
