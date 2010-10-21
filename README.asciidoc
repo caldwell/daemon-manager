@@ -56,7 +56,7 @@ Daemon Manager was originally conceived as a way to keep track of the myriad
 FastCGI servers on machines that host a number of heterogeneous web sites
 using servers like Lighttpd and Nginx. It became obvious as work progressed
 that the program wouldn't be specific to just FastCGI daemons, but that
-there were many uses cases for daemons that a user might want to run as
+there were many use cases for daemons that a user might want to run as
 themselves (or another non-privileged user) and control themselves.
 
 
