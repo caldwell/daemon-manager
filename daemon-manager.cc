@@ -196,8 +196,8 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         time_t wait_time=-1; // infinite
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
             if ((*d)->state == coolingdown)
-                wait_time = wait_time < 0 ? (*d)->cooldown_remaining()
-                                          : min(wait_time, (*d)->cooldown_remaining());
+                wait_time = wait_time < 0 ? (*d)->cooldown_remaining() * 1000
+                                          : min(wait_time, (*d)->cooldown_remaining() * 1000);
 
         int got = poll(fd, lengthof(fd), wait_time);
 
