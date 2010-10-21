@@ -44,9 +44,9 @@ static void dump_config(struct master_config config);
 int main(int argc, char **argv)
 {
     string config_path("/etc/daemon-manager/daemon-manager.conf");
-    int verbose;
-    bool foreground;
-    bool debug;
+    int verbose = 0;
+    bool foreground = false;
+    bool debug = false;
 
     struct option opts[] = {
         { "help",       no_argument,        NULL, 'h' },
