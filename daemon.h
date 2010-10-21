@@ -11,6 +11,7 @@ const std::string _state_str[] = { "stopped", "stopping", "running", "coolingdow
 
 class daemon {
   public:
+    std::string id;
     std::string config_file;
     time_t config_file_stamp;
     //int socket;
@@ -34,7 +35,6 @@ class daemon {
     daemon(std::string config_file, class user *user);
 
     void load_config();
-    std::string id();
     std::string sock_file();
     void create_sock_dir();
     std::string state_str() { return _state_str[state]; }

@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <libgen.h>
 
 using namespace std;
 
@@ -19,6 +20,10 @@ daemon::daemon(string config_file, class user *user)
         : config_file(config_file), config_file_stamp(-1), pid(0), user(user), state(stopped),
           cooldown(0), cooldown_start(0), respawns(0), start_time(0), respawn_time(0)
 {
+    const char *stem = basename((char*)config_file.c_str());
+    const char *ext = strstr(stem, ".conf");
+    id = user->name + "/" + string(stem, ext ? ext - stem : strlen(stem));
+
     load_config();
 }
 
@@ -48,17 +53,9 @@ void daemon::load_config()
     config_file_stamp = st.st_mtime;
 }
 
-#include <libgen.h>
-string daemon::id()
-{
-    const char *stem = basename((char*)config_file.c_str());
-    const char *ext = strstr(stem, ".conf");
-    return user->name + "/" + string(stem, ext ? ext - stem : strlen(stem));
-}
-
 string daemon::sock_file()
 {
-    return "/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + id() + ".socket";
+    return "/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + id + ".socket";
 }
 
 static void mkdirs(string path, mode_t mode, int uid=-1, int gid=-1)
@@ -76,7 +73,7 @@ void daemon::create_sock_dir()
 
 void daemon::start(bool respawn)
 {
-    log(LOG_INFO, "Starting %s\n", id().c_str());
+    log(LOG_INFO, "Starting %s\n", id.c_str());
 
     int fd[2];
     if (pipe(fd) <0) throw strprintf("Couldn't pipe: %s", strerror(errno));
@@ -92,7 +89,7 @@ void daemon::start(bool respawn)
         if(red > 0)
             throw string(err);
         pid = child; // Parent
-        log(LOG_INFO, "Started %s. pid=%d\n", id().c_str(), pid);
+        log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), pid);
         respawn_time = time(NULL);
         if (respawn)
             respawns++;
@@ -122,7 +119,7 @@ void daemon::start(bool respawn)
 void daemon::stop()
 {
     if (pid) {
-        log(LOG_INFO, "Stopping [%d] %s\n", pid, id().c_str());
+        log(LOG_INFO, "Stopping [%d] %s\n", pid, id.c_str());
         kill(pid, SIGTERM);
         state = stopping;
     }
@@ -138,7 +135,7 @@ void daemon::respawn()
     if (uptime < 60) cooldown = min((time_t)60, cooldown + 10); // back off if it's dying too often
     if (uptime > 60) cooldown = 0; // Clear cooldown on good behavior
     if (cooldown) {
-        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id().c_str(), cooldown);
+        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id.c_str(), cooldown);
         cooldown_start = now;
         state = coolingdown;
     } else

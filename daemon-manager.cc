@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
         if ((*d)->autostart)
             try { (*d)->start(); }
-            catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+            catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.c_str()); }
 
     select_loop(users, daemons);
 
@@ -225,7 +225,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                 if ((*d)->pid == kid) {
                     if ((*d)->state == running)
                         try { (*d)->respawn(); }
-                        catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                        catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.c_str()); }
                     else
                         (*d)->reap();
                     break;
@@ -234,9 +234,9 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         // Start up daemons that have cooled down
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
             if ((*d)->state == coolingdown && (*d)->cooldown_remaining() == 0) {
-                log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id().c_str());
+                log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id.c_str());
                 try { (*d)->start(true); }
-                catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.c_str()); }
             }
     }
 }
@@ -267,7 +267,7 @@ static string do_command(string command_line, vector<class daemon*> manageable)
     if (cmd == "list") {
         string resp = "";
         for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-            resp += (resp.length() ? "," : "") + (*d)->id();
+            resp += (resp.length() ? "," : "") + (*d)->id;
         return "OK: " + resp + "\n";
     }
 
@@ -275,7 +275,7 @@ static string do_command(string command_line, vector<class daemon*> manageable)
         string resp = strprintf("%-30s %-15s %6s %8s %8s %6s %6s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
         for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
             resp += strprintf("%-30s %-15s %6d %8d %8d %6d %6d\n",
-                              (*d)->id().c_str(),
+                              (*d)->id.c_str(),
                               (*d)->state_str().c_str(),
                               (*d)->pid,
                               (*d)->respawns,
@@ -288,13 +288,13 @@ static string do_command(string command_line, vector<class daemon*> manageable)
     try {
         class daemon *daemon;
         for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-            if ((*d)->id() == arg) {
+            if ((*d)->id == arg) {
                 daemon = *d;
                 goto legit;
             }
         throw strprintf("unknown id \"%s\"", arg.c_str());
       legit:
-        if      (cmd == "start")   if (daemon->pid) throw strprintf("Already running \"%s\"", daemon->id().c_str());
+        if      (cmd == "start")   if (daemon->pid) throw strprintf("Already running \"%s\"", daemon->id.c_str());
                                    else daemon->start();
         else if (cmd == "stop")    daemon->stop();
         else if (cmd == "restart") { daemon->stop(); daemon->start(); }
