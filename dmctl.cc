@@ -15,7 +15,7 @@ using namespace std;
 static void usage(char *me, int exit_code)
 {
     printf("Usage:\n"
-           "\t%s list|status\n"
+           "\t%s list|status|rescan\n"
            "\t%s start|stop|restart <daemon-id>\n", me, me);
     exit(exit_code);
 }
