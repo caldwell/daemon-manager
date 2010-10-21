@@ -76,6 +76,8 @@ void daemon::start(bool respawn)
 {
     log(LOG_INFO, "Starting %s\n", id.c_str());
 
+    load_config(); // Make sure we are up to date.
+
     int fd[2];
     if (pipe(fd) <0) throw strprintf("Couldn't pipe: %s", strerror(errno));
     fcntl(fd[0], F_SETFD, 1);
