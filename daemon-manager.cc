@@ -37,7 +37,7 @@ static vector<class daemon*> load_daemons(vector<user*> user_list);
 static void autostart(vector<class daemon*> daemons);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons);
-static string do_command(string command_line, vector<class daemon*> manageable);
+static string do_command(string command_line, user *user, vector<class daemon*> *daemons);
 static void dump_config(struct master_config config);
 
 int main(int argc, char **argv)
@@ -265,7 +265,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                         if (buf[red-1] == '\n') red--;
                         buf[red] = '\0';
                         for (char *r = buf, *cmd; cmd = strsep(&r, "\n"); ) {
-                            string resp = do_command(cmd, manageable_by_user(users[i], daemons));
+                            string resp = do_command(cmd, users[i], &daemons);
                             int wrote = write(users[i]->fifo_resp, resp.c_str(), resp.length());
                             log(LOG_DEBUG, "Wrote %d bytes of response: %s\n", wrote, resp.c_str());
                         }
@@ -315,8 +315,9 @@ static string daemon_id_list(vector<class daemon*> daemons)
     return resp;
 }
 
-static string do_command(string command_line, vector<class daemon*> manageable)
+static string do_command(string command_line, user *user, vector<class daemon*> *daemons)
 {
+    vector<class daemon*> manageable = manageable_by_user(user, *daemons);
     size_t space = command_line.find_first_of(" ");
     string cmd = command_line.substr(0, space);
     string arg = space != command_line.npos ? command_line.substr(space+1, command_line.length()) : "";
