@@ -54,6 +54,12 @@ void daemon::load_config()
     config_file_stamp = st.st_mtime;
 }
 
+bool daemon::exists()
+{
+    struct stat st;
+    return stat(config_file.c_str(), &st) == 0 && S_ISREG(st.st_mode);
+}
+
 string daemon::sock_file()
 {
     return "/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + id + ".socket";

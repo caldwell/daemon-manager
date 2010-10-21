@@ -37,6 +37,7 @@ class daemon {
     daemon(std::string config_file, class user *user);
 
     void load_config();
+    bool exists();
     std::string sock_file();
     void create_sock_dir();
     std::string state_str() { return _state_str[state]; }

@@ -246,6 +246,15 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 
         int got = poll(fd, lengthof(fd), wait_time);
 
+        // Cull daemons whose config files have been deleted
+        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end();)
+            if (((*d)->state == stopped || (*d)->state == coolingdown) && !(*d)->exists()) {
+                log(LOG_INFO, "Culling %s because %s has disappeared.\n", (*d)->id.c_str(), (*d)->config_file.c_str());
+                delete *d;
+                d = daemons.erase(d);
+            } else
+                d++;
+
         // Deal with input on the command FIFOs
         if (got > 0) {
             for (size_t i=0; i<lengthof(fd); i++)
