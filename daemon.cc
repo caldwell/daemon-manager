@@ -15,7 +15,7 @@
 
 using namespace std;
 
-daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user), state(stopped), cooldown(0)
+daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user), state(stopped), cooldown(0), respawns(0)
 {
     load_config();
 }
