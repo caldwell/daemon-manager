@@ -6,7 +6,7 @@
 #include <string>
 #include <time.h>
 
-enum run_state { stopped, running, coolingdown };
+enum run_state { stopped, stopping, running, coolingdown };
 
 class daemon {
   public:

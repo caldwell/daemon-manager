@@ -223,10 +223,11 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             log(LOG_NOTICE, "Child %d exited\n", kid);
             for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
                 if ((*d)->pid == kid) {
-                    (*d)->reap();
                     if ((*d)->state == running)
                         try { (*d)->respawn(); }
                         catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                    else
+                        (*d)->reap();
                     break;
                 }
         }

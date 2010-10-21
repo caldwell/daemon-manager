@@ -124,14 +124,15 @@ void daemon::stop()
     if (pid) {
         log(LOG_INFO, "Stopping [%d] %s\n", pid, id().c_str());
         kill(pid, SIGTERM);
+        state = stopping;
     }
     respawns = 0;
-    state = stopped;
 }
 
 
 void daemon::respawn()
 {
+    reap();
     time_t now = time(NULL);
     time_t uptime = now - respawn_time;
     if (uptime < 60) cooldown = min((time_t)60, cooldown + 10); // back off if it's dying too often
@@ -147,6 +148,7 @@ void daemon::respawn()
 void daemon::reap()
 {
     pid = 0;
+    state = stopped;
 }
 
 time_t daemon::cooldown_remaining()
