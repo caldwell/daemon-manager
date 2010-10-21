@@ -26,17 +26,21 @@ int main(int argc, char **argv)
     user *me;
     try {
         me = new user(getuid());
-        me->open_fifos(true);
     } catch (string e) {
         errx(1, "Error: %s\n", e.c_str());
+    }
+    try {
+        me->open_fifos(true);
+    } catch (string e) {
+        errx(1, "daemon-manager does not appear to be running.");
     }
 
     string command = argv[1];
     if (argc == 3)
         command += string(" ") + argv[2];
     int wrote = write(me->fifo_req_wr, command.c_str(), command.length());
-    if (wrote < 0) err(1,  "daemon-manager does not appear to be running.");
-    if (!wrote)   errx(1, "daemon-manager does not appear to be running.");
+    if (wrote < 0) err(1, "Write to command fifo failed");
+    if (!wrote)   errx(1, "Write to command fifo failed.");
 
     // Drain the FIFO
     char buf[1000];
@@ -47,12 +51,12 @@ int main(int argc, char **argv)
     fd[0].fd = me->fifo_resp_rd;
     fd[0].events = POLLIN;
     int got = poll(fd, 1, -1);
-    if (got < 0) err(1, "Poll failed.");
+    if (got < 0)  err(1, "Poll failed");
     if (got == 0) err(1, "Poll timed out.");
 
     int red = read(me->fifo_resp_rd, buf, sizeof(buf)-1);
-    if (red < 0)   err(1, "no response from daemon-manager");
-    if (red == 0) errx(1, "no response from daemon-manager.");
+    if (red < 0)   err(1, "No response from daemon-manager");
+    if (red == 0) errx(1, "No response from daemon-manager.");
 
     buf[red] = '\0';
     if (strcmp(buf, "OK\n") == 0) exit(0);
