@@ -19,6 +19,7 @@
 #include "lengthof.h"
 #include "strprintf.h"
 #include "log.h"
+#include "uniq.h"
 
 #include <vis.h>
 
@@ -145,10 +146,7 @@ static vector<user*> user_list_from_config(struct master_config config)
         unique_users.push_back(it->first);
     unique_users.push_back(name_from_uid(0));
 
-    sort(unique_users.begin(), unique_users.end());
-
-    vector<string>::iterator it = unique(unique_users.begin(), unique_users.end());
-    unique_users.resize(it - unique_users.begin());
+    unique_users = uniq(unique_users);
 
     dump_config(config);
 
