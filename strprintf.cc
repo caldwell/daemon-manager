@@ -8,10 +8,8 @@
 
 using std::string;
 
-string strprintf(const char *format, ...)
+static string vstrprintf(const char *format, va_list ap)
 {
-    va_list ap;
-    va_start(ap, format);
     char *buf;
     vasprintf(&buf, format, ap);
     if (!buf)
@@ -19,4 +17,19 @@ string strprintf(const char *format, ...)
     string s(buf);
     free(buf);
     return s;
+}
+
+string strprintf(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    return vstrprintf(format, ap);
+}
+
+bool throw_str(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    throw vstrprintf(format, ap);
+    return false;
 }

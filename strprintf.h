@@ -6,5 +6,9 @@
 
 std::string strprintf(const char *format, ...);
 
+// Shorthand for "throw strprintf(...)". It has a return type so you can do:
+//     mkdir() == -1 && throwstr("mkdir: %s", strerror(errno));
+bool throw_str(const char *format, ...);
+
 #endif /* __STRPRINTF_H__ */
 
