@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             case 'c': config_path = string(optarg); break;
             case 'v': verbose++; break;
             case 'f': foreground = true; break;
-            case 'd': debug = true; break;
+            case 'd': debug = foreground = true; break;
             default: usage(argv[0], 1); break;
         }
     }
