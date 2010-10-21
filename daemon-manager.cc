@@ -193,7 +193,15 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
     }
 
     while (1) {
-        int got = poll(fd, lengthof(fd), -1);
+        time_t wait_time=-1; // infinite
+        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
+            if ((*d)->state == coolingdown)
+                wait_time = wait_time < 0 ? (*d)->cooldown_remaining()
+                                          : min(wait_time, (*d)->cooldown_remaining());
+
+        int got = poll(fd, lengthof(fd), wait_time);
+
+        // Deal with input on the command FIFOs
         if (got > 0) {
             for (size_t i=0; i<lengthof(fd); i++)
                 if (fd[i].revents & POLLIN) {
@@ -216,11 +224,19 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
                 if ((*d)->pid == kid) {
                     (*d)->reap();
-                    try { (*d)->start(true); }
-                    catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+                    if ((*d)->state == running)
+                        try { (*d)->respawn(); }
+                        catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
                     break;
                 }
         }
+        // Start up daemons that have cooled down
+        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
+            if ((*d)->state == coolingdown && (*d)->cooldown_remaining() == 0) {
+                log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id().c_str());
+                try { (*d)->start(true); }
+                catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id().c_str(), e.c_str()); }
+            }
     }
 }
 
