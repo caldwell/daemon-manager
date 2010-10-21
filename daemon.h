@@ -50,6 +50,7 @@ class daemon {
     time_t cooldown_remaining();
 };
 
+bool daemon_compare(class daemon *a, class daemon *b);
 
 #endif /* __DAEMON_H__ */
 

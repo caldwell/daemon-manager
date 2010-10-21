@@ -171,3 +171,8 @@ time_t daemon::cooldown_remaining()
 {
     return max((time_t)0, cooldown - (time(NULL) - cooldown_start));
 }
+
+bool daemon_compare(class daemon *a, class daemon *b)
+{
+    return a->config_file < b->config_file;
+}
