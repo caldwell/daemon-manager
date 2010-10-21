@@ -34,6 +34,7 @@ static void usage(char *me, int exit_code)
 static void daemonize();
 static vector<user*> user_list_from_config(struct master_config config);
 static vector<class daemon*> load_daemons(vector<user*> user_list);
+static void autostart(vector<class daemon*> daemons);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*>daemons);
 static string do_command(string command_line, vector<class daemon*> manageable);
@@ -100,11 +101,7 @@ int main(int argc, char **argv)
 
     vector<class daemon*> daemons = load_daemons(users);
 
-    // Now start all the daemons marked "autostart"
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        if ((*d)->autostart)
-            try { (*d)->start(); }
-            catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.c_str()); }
+    autostart(daemons);
 
     select_loop(users, daemons);
 
@@ -206,6 +203,15 @@ static vector<class daemon*> load_daemons(vector<user*> user_list)
         }
     }
     return daemons;
+}
+
+static void autostart(vector<class daemon*> daemons)
+{
+    // Now start all the daemons marked "autostart"
+    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
+        if ((*d)->autostart)
+            try { (*d)->start(); }
+            catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.c_str()); }
 }
 
 static void handle_sig_child(int)
