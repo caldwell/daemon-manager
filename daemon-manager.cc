@@ -5,6 +5,9 @@
 #include <string.h>
 #include <string>
 #include <algorithm>
+#include <err.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <poll.h>
 #include <signal.h>
@@ -27,6 +30,7 @@ static void usage(char *me, int exit_code)
     exit(exit_code);
 }
 
+static void daemonize();
 static vector<user*> user_list_from_config(struct master_config config);
 static vector<class daemon*> load_daemons(vector<user*> user_list);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
@@ -88,6 +92,9 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    if (!foreground)
+        daemonize();
+
     vector<user*> users = user_list_from_config(config);
 
     vector<class daemon*> daemons = load_daemons(users);
@@ -101,6 +108,32 @@ int main(int argc, char **argv)
     select_loop(users, daemons);
 
     return 0;
+}
+
+static void daemonize()
+{
+    int child = fork();
+    if (child < 0) err(1, "Couldn't fork");
+    if (child > 0) exit(EXIT_SUCCESS); // Parent exits
+
+    // Child:
+    int sid = setsid();
+    if (sid < 0) {
+        log(LOG_ERR, "setsid failed: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    if ((chdir("/")) < 0) {
+        log(LOG_ERR, "What, / doesn't exist?? chdir: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+    open("/dev/null", O_RDONLY);
+    open("/dev/null", O_WRONLY);
+    open("/dev/null", O_WRONLY);
 }
 
 static vector<user*> user_list_from_config(struct master_config config)
