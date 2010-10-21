@@ -298,6 +298,14 @@ static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*
     return manageable;
 }
 
+static string daemon_id_list(vector<class daemon*> daemons)
+{
+    string resp = "";
+    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
+        resp += (resp.length() ? "," : "") + (*d)->id;
+    return resp;
+}
+
 static string do_command(string command_line, vector<class daemon*> manageable)
 {
     size_t space = command_line.find_first_of(" ");
@@ -306,10 +314,7 @@ static string do_command(string command_line, vector<class daemon*> manageable)
     log(LOG_DEBUG, "line: \"%s\" cmd: \"%s\", arg: \"%s\"\n", command_line.c_str(), cmd.c_str(), arg.c_str());
 
     if (cmd == "list") {
-        string resp = "";
-        for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-            resp += (resp.length() ? "," : "") + (*d)->id;
-        return "OK: " + resp + "\n";
+        return "OK: " + daemon_id_list(manageable) + "\n";
     }
 
     if (cmd == "status") {
