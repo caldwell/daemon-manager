@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "strprintf.h"
+#include "uniq.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -63,7 +64,7 @@ struct master_config parse_master_config(string path)
             if (trim(val)[0] != '\0') // Allow "user = " type lines.
                 list.push_back(string(trim(val)));
 
-        (*section)[string(key)] = list;
+        (*section)[string(key)] = uniq(list);
     }
 
     return config;
