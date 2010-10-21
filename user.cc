@@ -66,9 +66,10 @@ static void create_fifo(string path_str, uid_t uid, gid_t gid)
 {
     const char *path = path_str.c_str();
     struct stat st;
-    if (stat(path, &st) == 0 && unlink(path)) throw strprintf("Couldn't remove old FIFO @ %s: %s", path, strerror(errno));
-    if (mkfifo(path, 0700)) throw strprintf("mkfifo %s failed: %s", path, strerror(errno));
-    chown(path, uid, gid);
+    if(stat(path, &st) == 0)
+        unlink(path)      == -1 && throw_str("Couldn't remove old FIFO @ %s: %s", path, strerror(errno));
+    mkfifo(path, 0700)    == -1 && throw_str("mkfifo %s failed: %s", path, strerror(errno));
+    chown(path, uid, gid) == -1 && throw_str("chown %s, uid:%d, gid%d failed: %s", path, uid, gid, strerror(errno));
 }
 
 void user::create_fifos()
