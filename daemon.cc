@@ -104,10 +104,8 @@ void daemon::start(bool respawn)
     try {
         close(fd[0]);
         create_sock_dir();
-        setuid(run_as_uid);
-        seteuid(run_as_uid);
         setgid(user->gid);
-        setegid(user->gid);
+        setuid(run_as_uid);
         if (chdir(working_dir.c_str())) throw strprintf("Couldn't change to directory %s: %s", working_dir.c_str(), strerror(errno));
         const char *const env[] = { (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
