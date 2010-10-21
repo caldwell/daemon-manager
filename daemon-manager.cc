@@ -36,7 +36,7 @@ static vector<user*> user_list_from_config(struct master_config config);
 static vector<class daemon*> load_daemons(vector<user*> user_list);
 static void autostart(vector<class daemon*> daemons);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
-static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*>daemons);
+static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons);
 static string do_command(string command_line, vector<class daemon*> manageable);
 static void dump_config(struct master_config config);
 
@@ -134,6 +134,12 @@ static void daemonize()
     open("/dev/null", O_WRONLY);
 }
 
+template<class T>
+bool contains(vector<T> list, T value)
+{
+    return find(list.begin(), list.end(), value) != list.end();
+}
+
 static vector<user*> user_list_from_config(struct master_config config)
 {
     vector<string> unique_users;
@@ -177,6 +183,8 @@ static vector<user*> user_list_from_config(struct master_config config)
                 else
                     (*u)->manages.push_back(users[*name]);
             }
+            if (!contains((*u)->manages, *u)) // We can always manage ourselves.
+                (*u)->manages.push_back(*u);
         }
     }
     return user_list;
@@ -278,19 +286,15 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
     }
 }
 
-static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*>daemons)
+static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons)
 {
     vector<class daemon*> manageable;
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++) {
-        if ((*d)->user == user)
-            goto push;
+    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
         for (vector<class user*>::iterator u = user->manages.begin(); u != user->manages.end(); u++)
-            if ((*d)->user == *u)
-                goto push;
-        continue;
-      push:
-        manageable.push_back(*d);
-    }
+            if ((*d)->user == *u) {
+                manageable.push_back(*d);
+                break;
+            }
     return manageable;
 }
 
