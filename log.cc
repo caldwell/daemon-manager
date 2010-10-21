@@ -3,6 +3,7 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string>
 #include "log.h"
 
 static const char *const priority_name[8] = { "Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug" };
@@ -22,7 +23,7 @@ void log(int priority, const char *message, ...)
     va_list ap;
     va_start(ap, message);
     if (use_syslog)
-        vsyslog(priority, message, ap);
+        vsyslog(priority, (std::string("[")+priority_name[priority]+"] "+message).c_str(), ap);
     else if (priority <= log_level) {
         fprintf(stderr, "[%s] ", priority_name[priority]);
         vfprintf(stderr, message, ap);
