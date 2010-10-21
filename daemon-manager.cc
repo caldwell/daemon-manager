@@ -33,7 +33,8 @@ static void usage(char *me, int exit_code)
 
 static void daemonize();
 static vector<user*> user_list_from_config(struct master_config config);
-static vector<class daemon*> load_daemons(vector<user*> user_list);
+static vector<class daemon*>empty_daemon_list(0);
+static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class daemon*>existing = empty_daemon_list);
 static void autostart(vector<class daemon*> daemons);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons);
@@ -190,8 +191,9 @@ static vector<user*> user_list_from_config(struct master_config config)
     return user_list;
 }
 
-static vector<class daemon*> load_daemons(vector<user*> user_list)
+static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class daemon*>existing)
 {
+    sort(existing.begin(), existing.end(), daemon_compare);
     vector<class daemon*> daemons;
     // Now load up all the daemon config files for each user.
     for (vector<user*>::iterator u = user_list.begin(); u != user_list.end(); u++) {
@@ -200,8 +202,13 @@ static vector<class daemon*> load_daemons(vector<user*> user_list)
             for (vector<string>::iterator conf = confs.begin(); conf != confs.end(); conf++) {
                 try {
                     class daemon *d = new class daemon(*conf, *u);
-                    daemons.push_back(d);
-                    log(LOG_INFO, "Loaded daemon %s for %s\n", conf->c_str(), (*u)->name.c_str());
+                    if (!binary_search(existing.begin(), existing.end(), d, daemon_compare)) {
+                        daemons.push_back(d);
+                        log(LOG_INFO, "Loaded daemon %s for %s\n", conf->c_str(), (*u)->name.c_str());
+                    } else {
+                        log(LOG_DEBUG, "Skipping daemon %s we've already seen\n", d->id.c_str());
+                        delete d;
+                    }
                 } catch(string e) {
                     log(LOG_ERR, "Skipping %s's config file %s: %s", (*u)->name.c_str(), conf->c_str(), e.c_str());
                 }
