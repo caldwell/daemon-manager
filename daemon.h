@@ -6,6 +6,8 @@
 #include <string>
 #include <time.h>
 
+enum run_state { stopped, running };
+
 class daemon {
   public:
     std::string config_file;
@@ -21,6 +23,7 @@ class daemon {
     bool autostart;
 
     // stats:
+    run_state state;
     size_t respawns;
     time_t start_time;
     time_t respawn_time;

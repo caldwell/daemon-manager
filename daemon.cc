@@ -14,7 +14,7 @@
 
 using namespace std;
 
-daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user)
+daemon::daemon(string config_file, class user *user) : config_file(config_file), config_file_stamp(-1), user(user), state(stopped)
 {
     load_config();
 }
@@ -95,6 +95,7 @@ void daemon::start(bool respawn)
             respawns++;
         else
             start_time = time(NULL);
+        state = running;
         return;
     }
 
@@ -124,6 +125,7 @@ void daemon::stop()
         kill(pid, SIGTERM);
     }
     respawns = 0;
+    state = stopped;
 }
 
 void daemon::reap()
