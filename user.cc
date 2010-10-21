@@ -113,6 +113,12 @@ string user::config_path()
                     : homedir + "/.daemon-manager/daemons";
 }
 
+string user::log_dir()
+{
+    return uid == 0 ? "/var/log/daemon-manager/"
+                    : homedir + "/.daemon-manager/log/";
+}
+
 vector<string> user::config_files()
 {
     permissions::check(config_path(), 0002, uid);

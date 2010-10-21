@@ -28,6 +28,7 @@ class user {
     string fifo_dir();
     string fifo_path(bool request);
     string config_path();
+    string log_dir();
     vector<string> config_files();
   private:
     void create_dirs();
