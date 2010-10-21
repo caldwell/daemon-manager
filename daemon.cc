@@ -49,7 +49,7 @@ void daemon::load_config()
     if (!exists(config, string("start"))) throw strprintf("Missing \"start\" in %s\n", config_file.c_str());
     start_command = config["start"];
     autostart = !exists(config, string("autostart")) || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
-
+    log_output = exists(config, string("output")) && config["output"] == "log";
 
     config_file_stamp = st.st_mtime;
 }
@@ -107,6 +107,16 @@ void daemon::start(bool respawn)
         setgid(user->gid)          == -1 && throw_str("Couldn't set gid to %d: %s\n", user->gid, strerror(errno));
         setuid(run_as_uid)         == -1 && throw_str("Couldn't set uid to %d (%s): %s\n", user->gid, user->name.c_str(), strerror(errno));
         chdir(working_dir.c_str()) == -1 && throw_str("Couldn't change to directory %s: %s", working_dir.c_str(), strerror(errno));
+        if (log_output) {
+            struct stat st;
+            if (stat(user->log_dir().c_str(), &st) != 0)
+                mkdir(user->log_dir().c_str(), 0770) == -1 && throw_str("Couldn't create log directory %s: %s", user->log_dir().c_str(), strerror(errno));
+            close(1);
+            close(2);
+            string logfile=user->log_dir() + name + ".log";
+            open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_str("Couldn't open log file %s: %s", logfile.c_str(), strerror(errno));
+            dup2(1,2) == -1 && throw_str("Couldn't dup stdout to stderr: %s", strerror(errno));
+        }
         const char *const env[] = { (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
         throw strprintf("Couldn't exec: %s", strerror(errno));

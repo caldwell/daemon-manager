@@ -24,6 +24,7 @@ class daemon {
     int run_as_uid;
     std::string start_command;
     bool autostart;
+    bool log_output;
 
     // stats:
     run_state state;
