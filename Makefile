@@ -8,7 +8,17 @@ dmctl daemon-manager: LDFLAGS  += -g
 
 dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o
 
+-include *.d
+
 clean:
 	rm *.o *.d daemon-manager dmctl
 
--include *.d
+all: dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
+
+PODFLAGS=--release=daemon-manager-0.1 --center="Daemon Manager Documentation"
+
+%.1 : %.cc
+	pod2man $(PODFLAGS) $< $@
+
+%.5 : %.pod
+	pod2man $(PODFLAGS) $< $@
