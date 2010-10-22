@@ -75,7 +75,8 @@ void user::open_server_socket()
 
     command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
     if (command_socket < 0) throw_strerr("socket() failed");
-    bind(command_socket, (struct sockaddr*) &addr, sizeof(addr)) == 0 || throw_strerr("Binding to socket %s failed", addr.sun_path);
+    bind(command_socket, (struct sockaddr*) &addr, sizeof(sa_family_t) + strlen(addr.sun_path) + 1)
+                                                                 == 0 || throw_strerr("Binding to socket %s failed", addr.sun_path);
     listen(command_socket, 1)                                    == 0 || throw_strerr("listen(%s) failed", addr.sun_path);
 
     chown(addr.sun_path, uid, gid)                               == 0 || throw_strerr("chown %s, uid:%d, gid%d failed", addr.sun_path, uid, gid);
@@ -87,7 +88,8 @@ void user::open_client_socket()
     struct sockaddr_un addr = sock_addr();
     command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
     if (command_socket < 0) throw_strerr("socket() failed");
-    connect(command_socket, (struct sockaddr*) &addr, sizeof(addr)) == 0 || throw_strerr("Connect to %s failed", addr.sun_path);
+    connect(command_socket, (struct sockaddr*) &addr, sizeof(sa_family_t) + strlen(addr.sun_path) + 1)
+                                                                    == 0 || throw_strerr("Connect to %s failed", addr.sun_path);
     fcntl(command_socket, F_SETFL, O_NONBLOCK)                      == 0 || throw_strerr("Couldn't set O_NONBLOCK on %s", addr.sun_path);
 }
 
