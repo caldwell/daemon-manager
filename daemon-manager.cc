@@ -443,3 +443,105 @@ static void dump_config(struct master_config config)
         log(LOG_DEBUG, "%s\n", s.c_str());
     }
 }
+
+/*
+
+=head1 NAME
+
+daemon-manager - Allow users to setup and control daemons
+
+=head1 SYNOPSIS
+
+  daemon-manager [-h | --help] [-c | --config=<config-file>] [-v | --verbose] [-f | --foreground] [-d | --debug]
+
+=head1 DESCRIPTION
+
+B<daemon-manager> allows users to create and control their own background
+processes (daemons). It allows the user controlled daemons to run as
+different users as specifed by L<daemon.conf(5)> and permitted by
+L<daemon-manager.conf(5)>.
+
+=head1 CREATING DAEMONS
+
+When it starts up, daemon-manager looks in "~/.daemon-manager/daemons" for
+*.conf files that describe each daemon. For more information on the format
+of the daemon config files please see L<daemon.conf(5)>. Once you have
+created a daemon you can issue the C<rescan> command to L<dmctl(1)> which
+will cause daemon-manager to rescan all the daemon config directories,
+looking for new .conf files.
+
+=head1 CONTROLLING DAEMONS
+
+To start, stop, and inspect daemons, use the L<dmctl(1)> program.
+
+=head1 DEBUGGING PROBLEMS
+
+The daemon-manager process by default logs to syslog using the "daemon"
+facility. It only logs messages of "Notice" priority or higher unless the
+B<-v> option has been specified (see below).
+
+If the daemons have been configured with the I<output> option set to C<log>
+then their stdout and stderr will be redirected to a log file in
+"~/.daemon-manager/logs/<daemon>.conf" where <daemon> is the basename of the
+.conf file.
+
+=head1 COMMAND LINE OPTIONS
+
+This section describes the command line options for daemon-manager
+master process itself.
+
+=over
+
+=item I<-h>
+
+=item I<--help>
+
+This option causes daemon-manager to print a quick usage line and then quit.
+
+=item I<-c <config-file> >
+
+=item I<--config=<config-file> >
+
+Use this option to specify a non-standard path for the
+L<daemon-manager.conf(5)> file, instead of the default
+"/etc/daemon-manager/daemon-manager.conf" location.
+
+Regardless of where it is, the file must be owned by root and it must not be
+world readable.
+
+=item I<-v>
+
+=item I<--verbose>
+
+Increase the logging verbosity. This option can be specified 2 times to
+produce even more verbose output. The first time it will start outputting
+syslog "Info" priority messages and the second time will add "Debug"
+priority messages.
+
+=item I<-f>
+
+=item I<--foreground>
+
+By default daemon-manager will detach and run in the background, returning
+control to the shell when launched. Use this option to disable this feature
+and keep daemon-manager running in the foreground.
+
+=item I<-d>
+
+=item I<--debug>
+
+This option causes daemon-manager to log to stderr instead of syslog. As a
+side effect, daemons with their I<output> option set to C<discard> will also
+have their stderr and stdout streams output.
+
+This option implies I<--foreground>.
+
+=back
+
+=head1 SEE ALSO
+
+L<dmctl(1)>, L<daemon-manager.conf(5)>, L<daemon.conf(5)>
+
+=cut
+
+*/
