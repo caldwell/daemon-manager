@@ -1,0 +1,87 @@
+=head1 NAME
+
+daemon.conf - Daemon configuration file for Daemon Manager
+
+=head1 SYNOPSIS
+
+  # Example conf file:
+  start=./daemon_exe --flags   # Line will be interpretted by /bin/sh
+  dir=/some/working/dir        # working dir        default: /
+  user=nobody                  # Who to run as      default: the user
+  output=log                   # "log" or "discard" default: discard
+  autostart=no                 # "yes" or "no"      default: yes
+
+=head1 DESCRIPTION
+
+This manual page describes the config files for daemons controlled by
+L<daemon-manager(1)>. The config files are loaded out of the user's home
+directory: B<"~/.daemon-manager/daemons">. Root's config files are loaded from
+B<"/etc/daemon-manager/daemons">. Only files with the suffix ".conf" will be
+loaded.
+
+The config files must not be world writable and must be owned by the user
+whose home directory they are in.
+
+Each config file describes a single daemon.
+
+=head1 FILE FORMAT
+
+The config file is a plain text file. The general format is
+
+  option = value
+
+White space is stripped from around options and values.
+
+Comments are stripped from lines before they are parsed. A comment starts with
+a '#' and continues to the end of a line.
+
+Blank lines are ignored.
+
+=head1 CONFIGURATION OPTIONS
+
+=over
+
+=item I<start>
+
+This is the line that will be fed to /bin/sh in order to start the
+daemon. This option is required. The daemon is required to stay in the
+foreground. If it tries to daemonize then L<daemon-manager(1)> will think it
+has exited prematurely and will attempt to restart it. It is also a good idea
+to use B<sh>'s C<exec> built-in to jettison the shell while launching the
+daemon.
+
+=item I<dir>
+
+This option specifies the working directory. The daemon will be started from
+this directory. If the I<dir> option is not specified it defaults to "/".
+
+=item I<user>
+
+Use this option to specify which user the daemon should be run as. By default
+users are only allowed to start daemons as themselves. The system
+administrator can allow a user to run as another user by adding to the
+B<run_as> section of the L<daemon-manager.conf(5)> file.
+
+=item I<output>
+
+This option controls whether stdout and stderr from the daemon should be
+logged or discarded.
+
+The valid values for this option are "C<log>" or "C<discard>", with
+"C<discard>" being the default if the option is not specified.
+
+=item I<autostart>
+
+If this option is "yes" or left unspecified then the daemon will be started
+automatically when L<daemon-manager(5)> itself is started.
+
+If this option is "no" then it will only be started by L<dmctl(1)>'s
+"C<start>" command.
+
+=back
+
+=head1 SEE ALSO
+
+L<daemon-manager(1)>, L<daemon-manager.conf(5)>, L<dmctl(1)>
+
+=cut
