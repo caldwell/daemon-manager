@@ -10,5 +10,8 @@ std::string strprintf(const char *format, ...);
 //     mkdir() == -1 && throwstr("mkdir: %s", strerror(errno));
 bool throw_str(const char *format, ...);
 
+// Same plus an implied +": "+strerror(errno)
+bool throw_strerr(const char *format, ...);
+
 #endif /* __STRPRINTF_H__ */
 
