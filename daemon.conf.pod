@@ -70,6 +70,11 @@ logged or discarded.
 The valid values for this option are "C<log>" or "C<discard>", with
 "C<discard>" being the default if the option is not specified.
 
+If the daemons have been configured with the I<output> option set to C<log>
+then their stdout and stderr will be redirected to a log file in
+"~/.daemon-manager/log/<daemon>.log" where <daemon> is the basename of the
+.conf file.
+
 =item I<autostart>
 
 If this option is "yes" or left unspecified then the daemon will be started
