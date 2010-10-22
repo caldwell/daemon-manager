@@ -57,11 +57,18 @@ void user::create_dirs()
     }
 }
 
+struct sockaddr_un user::sock_addr()
+{
+    struct sockaddr_un addr;
+    addr.sun_family = AF_LOCAL;
+    strncpy(addr.sun_path, socket_path().c_str(), sizeof(addr.sun_path));
+    addr.sun_path[sizeof(addr.sun_path)-1] = '\0';
+    return addr;
+}
+
 void user::open_server_socket()
 {
-    struct sockaddr_un addr = { sizeof(struct sockaddr_un), AF_LOCAL, "" };
-    strlcpy(addr.sun_path, socket_path().c_str(), sizeof(addr.sun_path));
-
+    struct sockaddr_un addr = sock_addr();
     struct stat st;
     if(stat(addr.sun_path, &st) == 0)
         unlink(addr.sun_path)                                    == 0 || throw_strerr("Couldn't remove old socket @ %s", addr.sun_path);
@@ -77,8 +84,7 @@ void user::open_server_socket()
 
 void user::open_client_socket()
 {
-    struct sockaddr_un addr = { sizeof(struct sockaddr_un), AF_LOCAL, "" };
-    strlcpy(addr.sun_path, socket_path().c_str(), sizeof(addr.sun_path));
+    struct sockaddr_un addr = sock_addr();
     command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
     if (command_socket < 0) throw_strerr("socket() failed");
     connect(command_socket, (struct sockaddr*) &addr, sizeof(addr)) == 0 || throw_strerr("Connect to %s failed", addr.sun_path);

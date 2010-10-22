@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <sys/un.h>
 
 using namespace std;
 
@@ -30,6 +31,7 @@ class user {
     vector<string> config_files();
   private:
     void init(struct passwd *);
+    struct sockaddr_un sock_addr();
 };
 
 #endif /* __USER_H__ */
