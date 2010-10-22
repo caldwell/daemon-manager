@@ -30,7 +30,7 @@ int main(int argc, char **argv)
         errx(1, "Error: %s\n", e.c_str());
     }
     try {
-        me->open_fifos(true);
+        me->open_client_socket();
     } catch (string e) {
         errx(1, "daemon-manager does not appear to be running.");
     }
@@ -38,23 +38,23 @@ int main(int argc, char **argv)
     string command = argv[1];
     if (argc == 3)
         command += string(" ") + argv[2];
-    int wrote = write(me->fifo_req_wr, command.c_str(), command.length());
+    int wrote = write(me->command_socket, command.c_str(), command.length());
     if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
 
     // Drain the FIFO
     char buf[1000];
-    while (read(me->fifo_resp_rd, buf, sizeof(buf)-1) > 0) {}
+    while (read(me->command_socket, buf, sizeof(buf)-1) > 0) {}
 
     // Wait for our response:
     struct pollfd fd[1];
-    fd[0].fd = me->fifo_resp_rd;
+    fd[0].fd = me->command_socket;
     fd[0].events = POLLIN;
     int got = poll(fd, 1, -1);
     if (got < 0)  err(1, "Poll failed");
     if (got == 0) err(1, "Poll timed out.");
 
-    int red = read(me->fifo_resp_rd, buf, sizeof(buf)-1);
+    int red = read(me->command_socket, buf, sizeof(buf)-1);
     if (red < 0)   err(1, "No response from daemon-manager");
     if (red == 0) errx(1, "No response from daemon-manager.");
 

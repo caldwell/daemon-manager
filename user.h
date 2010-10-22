@@ -14,25 +14,21 @@ class user {
     int uid;
     int gid;
     string homedir;
-    int fifo_req;
-    int fifo_resp;
-    int fifo_req_wr;
-    int fifo_resp_rd;
+    int command_socket;
     map<int,bool> can_run_as_uid;
     vector<user*> manages;
 
     user(string name);
     user(uid_t uid);
-    void create_files();
-    void open_fifos(bool client = false);
-    string fifo_dir();
-    string fifo_path(bool request);
+    void create_dirs();
+    void open_server_socket();
+    void open_client_socket();
+    string socket_dir();
+    string socket_path();
     string config_path();
     string log_dir();
     vector<string> config_files();
   private:
-    void create_dirs();
-    void create_fifos();
     void init(struct passwd *);
 };
 

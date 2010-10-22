@@ -8,6 +8,9 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <poll.h>
 #include <signal.h>
@@ -20,6 +23,7 @@
 #include "strprintf.h"
 #include "log.h"
 #include "uniq.h"
+#include "key-exists.h"
 
 #include <vis.h>
 
@@ -160,7 +164,8 @@ static vector<user*> user_list_from_config(struct master_config config)
     for (vector<string>::iterator u = unique_users.begin(); u != unique_users.end(); u++) {
         try {
             user_list.push_back(users[*u] = new user(*u));
-            users[*u]->create_files();
+            users[*u]->create_dirs();
+            users[*u]->open_server_socket();
         } catch (string e) {
             log(LOG_WARNING, "Ignoring %s: %s\n", u->c_str(), e.c_str());
         }
@@ -237,21 +242,35 @@ static void handle_sig_child(int)
 static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 {
     signal(SIGCHLD, handle_sig_child);
-    struct pollfd fd[users.size()];
-    for (size_t i=0; i<lengthof(fd); i++) {
-        fd[i].fd = users[i]->fifo_req;
-        fd[i].events = POLLIN;
-        //fds[i].revents = 0;
-    }
+    typedef map<int,user*> fd_map;
+    typedef map<int,user*>::iterator fd_map_it;
+
+    map<int,user*> listeners;
+    map<int,user*> clients;
+
+    for (vector<class user*>::iterator u = users.begin(); u != users.end(); u++)
+        listeners[(*u)->command_socket] = *u;
 
     while (1) {
+        struct pollfd fd[listeners.size() + clients.size()];
+        int nfds = 0;
+
+        for (fd_map_it lis = listeners.begin(); lis != listeners.end(); lis++, nfds++) {
+            fd[nfds].fd = lis->first;
+            fd[nfds].events = POLLIN;
+        }
+        for (fd_map_it cli = clients.begin(); cli != clients.end(); cli++, nfds++) {
+            fd[nfds].fd = cli->first;
+            fd[nfds].events = POLLIN;
+        }
+
         time_t wait_time=-1; // infinite
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
             if ((*d)->state == coolingdown)
                 wait_time = wait_time < 0 ? (*d)->cooldown_remaining() * 1000
                                           : min(wait_time, (*d)->cooldown_remaining() * 1000);
 
-        int got = poll(fd, lengthof(fd), wait_time);
+        int got = poll(fd, nfds, wait_time);
 
         // Cull daemons whose config files have been deleted
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end();)
@@ -262,22 +281,39 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             } else
                 d++;
 
-        // Deal with input on the command FIFOs
+        // Deal with input on the command sockets
         if (got > 0) {
-            for (size_t i=0; i<lengthof(fd); i++)
+            for (size_t i=0; i<lengthof(fd); i++) {
                 if (fd[i].revents & POLLIN) {
-                    char buf[1000];
-                    int red = read(fd[i].fd, buf, sizeof(buf)-1);
-                    if (red) {
-                        if (buf[red-1] == '\n') red--;
-                        buf[red] = '\0';
-                        for (char *r = buf, *cmd; cmd = strsep(&r, "\n"); ) {
-                            string resp = do_command(cmd, users[i], &daemons);
-                            int wrote = write(users[i]->fifo_resp, resp.c_str(), resp.length());
-                            log(LOG_DEBUG, "Wrote %d bytes of response: %s\n", wrote, resp.c_str());
+                    if (key_exists(listeners, fd[i].fd)) {
+                        struct sockaddr_un addr;
+                        socklen_t addr_len;
+                        int client = accept(fd[i].fd, (struct sockaddr*) &addr, &addr_len);
+                        if (client == -1) {
+                            log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
+                            continue;
+                        }
+                        fcntl(client, F_SETFL, O_NONBLOCK);
+                        clients[client] = listeners[fd[i].fd];
+                    } else if (key_exists(clients, fd[i].fd)) {
+                        char buf[1000];
+                        int red = read(fd[i].fd, buf, sizeof(buf)-1);
+                        if (red) {
+                            if (buf[red-1] == '\n') red--;
+                            buf[red] = '\0';
+                            for (char *r = buf, *cmd; cmd = strsep(&r, "\n"); ) {
+                                string resp = do_command(cmd, clients[fd[i].fd], &daemons);
+                                int wrote = write(fd[i].fd, resp.c_str(), resp.length());
+                                log(LOG_DEBUG, "Wrote %d bytes of response: %s\n", wrote, resp.c_str());
+                            }
                         }
                     }
                 }
+                if (fd[i].revents & POLLHUP && key_exists(clients, fd[i].fd)) {
+                    close(fd[i].fd);
+                    clients.erase(fd[i].fd);
+                }
+            }
         }
         // Reap/respawn our children
         for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {

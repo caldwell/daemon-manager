@@ -9,6 +9,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/un.h>
+#include <sys/socket.h>
 #include <pwd.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -41,19 +43,12 @@ void user::init(struct passwd *p)
     homedir = string(p->pw_dir);
 }
 
-void user::create_files()
-{
-    create_dirs();
-    create_fifos();
-    open_fifos();
-}
-
 void user::create_dirs()
 {
     struct stat st;
-    if (stat(fifo_dir().c_str(), &st) != 0) {
-        mkdir(fifo_dir().c_str(), 0750);
-        chown(fifo_dir().c_str(), uid, gid);
+    if (stat(socket_dir().c_str(), &st) != 0) {
+        mkdir(socket_dir().c_str(), 0750);
+        chown(socket_dir().c_str(), uid, gid);
     }
     if (uid != 0 && // Don't create /etc/daemon-manager. Package manager should do that.
         stat(config_path().c_str(), &st) != 0) {
@@ -62,50 +57,42 @@ void user::create_dirs()
     }
 }
 
-static void create_fifo(string path_str, uid_t uid, gid_t gid)
+void user::open_server_socket()
 {
-    const char *path = path_str.c_str();
+    struct sockaddr_un addr = { sizeof(struct sockaddr_un), AF_LOCAL, "" };
+    strlcpy(addr.sun_path, socket_path().c_str(), sizeof(addr.sun_path));
+
     struct stat st;
-    if(stat(path, &st) == 0)
-        unlink(path)      == -1 && throw_str("Couldn't remove old FIFO @ %s: %s", path, strerror(errno));
-    mkfifo(path, 0700)    == -1 && throw_str("mkfifo %s failed: %s", path, strerror(errno));
-    chown(path, uid, gid) == -1 && throw_str("chown %s, uid:%d, gid%d failed: %s", path, uid, gid, strerror(errno));
+    if(stat(addr.sun_path, &st) == 0)
+        unlink(addr.sun_path)                                    == 0 || throw_strerr("Couldn't remove old socket @ %s", addr.sun_path);
+
+    command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
+    if (command_socket < 0) throw_strerr("socket() failed");
+    bind(command_socket, (struct sockaddr*) &addr, sizeof(addr)) == 0 || throw_strerr("Binding to socket %s failed", addr.sun_path);
+    listen(command_socket, 1)                                    == 0 || throw_strerr("listen(%s) failed", addr.sun_path);
+
+    chown(addr.sun_path, uid, gid)                               == 0 || throw_strerr("chown %s, uid:%d, gid%d failed", addr.sun_path, uid, gid);
+    chmod(addr.sun_path, 0700)                                   == 0 || throw_strerr("chmod %s, 0700", addr.sun_path);
 }
 
-void user::create_fifos()
+void user::open_client_socket()
 {
-     create_fifo(fifo_path(true),  uid, gid);
-     create_fifo(fifo_path(false), uid, gid);
+    struct sockaddr_un addr = { sizeof(struct sockaddr_un), AF_LOCAL, "" };
+    strlcpy(addr.sun_path, socket_path().c_str(), sizeof(addr.sun_path));
+    command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
+    if (command_socket < 0) throw_strerr("socket() failed");
+    connect(command_socket, (struct sockaddr*) &addr, sizeof(addr)) == 0 || throw_strerr("Connect to %s failed", addr.sun_path);
+    fcntl(command_socket, F_SETFL, O_NONBLOCK)                      == 0 || throw_strerr("Couldn't set O_NONBLOCK on %s", addr.sun_path);
 }
 
-
-static int open_fifo(string path, int oflags)
-{
-    int fifo = open(path.c_str(), oflags);
-    if (fifo < 0) throw strprintf("open %s (%s) failed: %s", path.c_str(), oflags & O_RDONLY ? "read" : "write", strerror(errno));
-    fcntl(fifo, F_SETFD, 1);
-    return fifo;
-}
-
-void user::open_fifos(bool client)
-{
-    // We don't use this end of the FIFO, we just hold it open because otherwise Linux craps its pants when the
-    // number of writers go from 1 to 0 (select always returns the fd to tell us it's EOF and there's no way to
-    // clear the condition short of closing the file and re-opening it which is gross). Not needed on Mac OS X.
-    if (!client) fifo_req     = open_fifo(fifo_path(true),  O_RDONLY | O_NONBLOCK);
-                 fifo_req_wr  = open_fifo(fifo_path(true),  O_WRONLY | O_NONBLOCK);
-                 fifo_resp_rd = open_fifo(fifo_path(false), O_RDONLY | O_NONBLOCK);
-    if (!client) fifo_resp    = open_fifo(fifo_path(false), O_WRONLY | O_NONBLOCK);
-}
-
-string user::fifo_dir()
+string user::socket_dir()
 {
     return uid == 0 ? "/var/run/daemon-manager/"
                     : homedir + "/.daemon-manager/";
 }
-string user::fifo_path(bool request)
+string user::socket_path()
 {
-    return fifo_dir() + (request ? "req" : "resp")+".fifo";
+    return socket_dir() + "command.sock";
 }
 
 string user::config_path()
