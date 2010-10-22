@@ -234,6 +234,13 @@ static void autostart(vector<class daemon*> daemons)
             catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.c_str()); }
 }
 
+static void distribute_signal_to_children(int sig)
+{
+    log(LOG_DEBUG, "Signal: %s [%d]\n", strsignal(sig), sig);
+    kill(0, sig);
+    exit(EXIT_FAILURE);
+}
+
 static void handle_sig_child(int)
 {
     log(LOG_DEBUG, "SIGCHLD\n");
@@ -242,6 +249,8 @@ static void handle_sig_child(int)
 static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 {
     signal(SIGCHLD, handle_sig_child);
+    signal(SIGTERM, distribute_signal_to_children);
+    signal(SIGINT,  distribute_signal_to_children);
     typedef map<int,user*> fd_map;
     typedef map<int,user*>::iterator fd_map_it;
 
