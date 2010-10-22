@@ -6,6 +6,7 @@
 #include "passwd.h"
 #include "strprintf.h"
 #include "log.h"
+#include "key-exists.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -26,12 +27,6 @@ daemon::daemon(string config_file, class user *user)
     id = user->name + "/" + name;
 
     load_config();
-}
-
-template<class T,class U>
-bool key_exists(map<T,U> m, T k)
-{
-    return m.find(k) != m.end();
 }
 
 void daemon::load_config()
