@@ -1,6 +1,7 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
 
 #include <string>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
