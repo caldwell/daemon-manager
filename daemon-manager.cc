@@ -461,6 +461,12 @@ processes (daemons). It allows the user controlled daemons to run as
 different users as specifed by L<daemon.conf(5)> and permitted by
 L<daemon-manager.conf(5)>.
 
+Once a daemon is running, B<daemon-manager> will respawn it if it ever
+quits. If the daemon is quitting and respawning too quickly then
+B<daemon-manager> will start delaying before respawning it. This delay is
+called the cooldown time and is used to prevent heavy CPU usage when daemons
+with severe problems quit the instant they are started.
+
 =head1 CREATING DAEMONS
 
 When it starts up, daemon-manager looks in "~/.daemon-manager/daemons" for
