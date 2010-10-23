@@ -17,8 +17,9 @@ using namespace std;
 static void usage(char *me, int exit_code)
 {
     printf("Usage:\n"
-           "\t%s list|status|rescan\n"
-           "\t%s start|stop|restart <daemon-id>\n", me, me);
+           "\t%s list|rescan\n"
+           "\t%s status [<daemon-id>]\n"
+           "\t%s start|stop|restart <daemon-id>\n", me, me, me);
     exit(exit_code);
 }
 
@@ -127,7 +128,8 @@ dmctl - Daemon Manager control
 
 =head1 SYNOPSIS
 
-  dmctl list|status|rescan
+  dmctl list|rescan
+  dmctl status [<daemon-id>]
   dmctl start|stop|restart <daemon-id>
 
 =head1 DESCRIPTION
@@ -143,10 +145,11 @@ L<daemon-manager(1)> daemon.
 
 This command will list all the daemon ids that the user is allowed to control.
 
-=item I<status>
+=item I<status> [I<daemon-id>]
 
 This command will print a human readable list of the daemons-ids and their
-current stats.
+current stats. If the optional parameter I<daemon-id> is specified then only
+the status for the daemon with that id will be shown.
 
 The following pieces of data are shown per daemon:
 
