@@ -12,9 +12,10 @@ dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o
 -include *.d
 
 clean:
-	rm -f *.o *.d $(EXE)
+	rm -f *.o *.d $(EXE) $(MAN)
 
-all: dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
+MAN=dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
+all: $(MAN)
 
 PODFLAGS=--release=daemon-manager-0.1 --center="Daemon Manager Documentation"
 
