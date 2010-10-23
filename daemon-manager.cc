@@ -1,6 +1,5 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
 
-#include <getopt.h>
 #include <stdio.h>
 #include <string.h>
 #include <string>
@@ -24,6 +23,7 @@
 #include "log.h"
 #include "uniq.h"
 #include "key-exists.h"
+#include "options.h"
 
 #include <vis.h>
 
@@ -52,41 +52,15 @@ int main(int argc, char **argv)
     bool foreground = false;
     bool debug = false;
 
-    struct option opts[] = {
-        { "help",       no_argument,        NULL, 'h' },
-        { "config",     required_argument,  NULL, 'c' },
-        { "verbose",    no_argument,        NULL, 'v' },
-        { "foreground", no_argument,        NULL, 'f' },
-        { "debug",      no_argument,        NULL, 'd' },
-        {0,0,0,0}
-    };
+    options o(argc, argv);
+    if (o.get("help",       'h'))               { usage(argv[0], EXIT_SUCCESS); }
+    if (o.get("config",     'c', arg_required)) { config_path = string(o.arg); }
+    if (o.get("verbose",    'v'))               { verbose = o.argm.size(); }
+    if (o.get("foreground", 'f'))               { foreground = true; }
+    if (o.get("debug",      'd'))               { debug = foreground = true; }
+    if (o.bad_args() ||
+        o.args.size()) usage(argv[0], EXIT_FAILURE);
 
-    char shortopts[100];
-    size_t si=0;
-    for (int i=0; opts[i].name; i++)
-        if (si < sizeof(shortopts)-3 &&
-            !opts[i].flag && isprint(opts[i].val)) {
-            shortopts[si++] = opts[i].val;
-            if (opts[i].has_arg == required_argument)
-                shortopts[si++] = ':';
-        }
-    shortopts[si] = '\0';
-
-    for (int ch; (ch = getopt_long(argc, argv, shortopts, opts, NULL)) != -1;) {
-        switch (ch) {
-            case 'h': usage(argv[0], EXIT_SUCCESS); break;
-            case 'c': config_path = string(optarg); break;
-            case 'v': verbose++; break;
-            case 'f': foreground = true; break;
-            case 'd': debug = foreground = true; break;
-            default: usage(argv[0], 1); break;
-        }
-    }
-
-    if (argc != optind) {
-        fprintf(stderr, "Too many arguments.\n");
-        usage(argv[0], EXIT_FAILURE);
-    }
 
     init_log(!debug, min(LOG_DEBUG, LOG_NOTICE + verbose));
 
