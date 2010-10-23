@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include "user.h"
 #include "stringutil.h"
+#include "options.h"
 
 using namespace std;
 
@@ -28,7 +29,9 @@ static string canonify(string id, user *u);
 
 int main(int argc, char **argv)
 {
-    if (argc < 2 || argc > 3) usage(argv[0], 1);
+    options o(argc, argv);
+    if (o.bad_args() || o.args.size() < 1 || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+
     user *me;
     try {
         me = new user(getuid());
@@ -41,9 +44,9 @@ int main(int argc, char **argv)
         errx(1, "daemon-manager does not appear to be running.");
     }
 
-    string command = argv[1];
-    if (argc == 3)
-        command += string(" ") + canonify(argv[2], me);
+    string command = o.args[0];
+    if (o.args.size() == 2)
+        command += string(" ") + canonify(o.args[1], me);
 
     try {
         string resp = do_command(command, me);
