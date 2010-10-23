@@ -123,8 +123,8 @@ void daemon::start(bool respawn)
         const char *const env[] = { (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
-    } catch (string e) {
-        write(fd[1], e.c_str(), e.length()+1/*NULL*/);
+    } catch (std::exception &e) {
+        write(fd[1], e.what(), strlen(e.what())+1/*NULL*/);
         close(fd[1]);
         exit(0);
     }

@@ -1,5 +1,6 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
 
+#include <stdexcept>
 #include <string>
 #include <string.h>
 #include <stdio.h>
@@ -32,7 +33,7 @@ bool throw_str(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    throw vstrprintf(format, ap);
+    throw std::runtime_error(vstrprintf(format, ap));
     return false;
 }
 
@@ -40,6 +41,6 @@ bool throw_strerr(const char *format, ...)
 {
     va_list ap;
     va_start(ap, format);
-    throw vstrprintf(format, ap) + ": " + strerror(errno);
+    throw std::runtime_error(vstrprintf(format, ap) + ": " + strerror(errno));
     return false;
 }

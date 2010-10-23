@@ -26,12 +26,12 @@ int main(int argc, char **argv)
     user *me;
     try {
         me = new user(getuid());
-    } catch (string e) {
-        errx(1, "Error: %s\n", e.c_str());
+    } catch (std::exception &e) {
+        errx(1, "Error: %s\n", e.what());
     }
     try {
         me->open_client_socket();
-    } catch (string e) {
+    } catch (std::exception &e) {
         errx(1, "daemon-manager does not appear to be running.");
     }
 

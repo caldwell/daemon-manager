@@ -94,8 +94,8 @@ int main(int argc, char **argv)
     try {
         permissions::check(config_path, 0113, 0, 0);
         config = parse_master_config(config_path);
-    } catch(std::string e) {
-        log(LOG_ERR, "Couldn't load config file: %s\n", e.c_str());
+    } catch(std::exception &e) {
+        log(LOG_ERR, "Couldn't load config file: %s\n", e.what());
         exit(EXIT_FAILURE);
     }
 
@@ -166,8 +166,8 @@ static vector<user*> user_list_from_config(struct master_config config)
             user_list.push_back(users[*u] = new user(*u));
             users[*u]->create_dirs();
             users[*u]->open_server_socket();
-        } catch (string e) {
-            log(LOG_WARNING, "Ignoring %s: %s\n", u->c_str(), e.c_str());
+        } catch (std::exception &e) {
+            log(LOG_WARNING, "Ignoring %s: %s\n", u->c_str(), e.what());
         }
     }
 
@@ -214,12 +214,12 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
                         log(LOG_DEBUG, "Skipping daemon %s we've already seen\n", d->id.c_str());
                         delete d;
                     }
-                } catch(string e) {
-                    log(LOG_ERR, "Skipping %s's config file %s: %s", (*u)->name.c_str(), conf->c_str(), e.c_str());
+                } catch(std::exception &e) {
+                    log(LOG_ERR, "Skipping %s's config file %s: %s", (*u)->name.c_str(), conf->c_str(), e.what());
                 }
             }
-        } catch (string e) {
-            log(LOG_ERR, "Skipping %s's config files: %s\n", (*u)->name.c_str(), e.c_str());
+        } catch (std::exception &e) {
+            log(LOG_ERR, "Skipping %s's config files: %s\n", (*u)->name.c_str(), e.what());
         }
     }
     return daemons;
@@ -231,7 +231,7 @@ static void autostart(vector<class daemon*> daemons)
     for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
         if ((*d)->autostart)
             try { (*d)->start(); }
-            catch(string e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.c_str()); }
+            catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.what()); }
 }
 
 static void distribute_signal_to_children(int sig)
@@ -331,7 +331,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                 if ((*d)->pid == kid) {
                     if ((*d)->state == running)
                         try { (*d)->respawn(); }
-                        catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.c_str()); }
+                        catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
                     else
                         (*d)->reap();
                     break;
@@ -342,7 +342,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             if ((*d)->state == coolingdown && (*d)->cooldown_remaining() == 0) {
                 log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id.c_str());
                 try { (*d)->start(true); }
-                catch(string e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.c_str()); }
+                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
             }
     }
 }
@@ -416,8 +416,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         else if (cmd == "stop")    daemon->stop();
         else if (cmd == "restart") { daemon->stop(); daemon->start(); }
         else throw_str("bad command \"%s\"", cmd.c_str());
-    } catch (string e) {
-        return "ERR: " + e + "\n";
+    } catch (std::exception &e) {
+        return string("ERR: ") + e.what() + "\n";
     }
     return "OK\n";
 }
