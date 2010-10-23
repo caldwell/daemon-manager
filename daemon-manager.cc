@@ -457,9 +457,8 @@ daemon-manager - Allow users to setup and control daemons
 =head1 DESCRIPTION
 
 B<daemon-manager> allows users to create and control their own background
-processes (daemons). It allows the user controlled daemons to run as
-different users as specifed by L<daemon.conf(5)> and permitted by
-L<daemon-manager.conf(5)>.
+processes (daemons). It allows these daemons to run as different users as
+specifed by L<daemon.conf(5)> and permitted by L<daemon-manager.conf(5)>.
 
 Once a daemon is running, B<daemon-manager> will respawn it if it ever
 quits. If the daemon is quitting and respawning too quickly then
