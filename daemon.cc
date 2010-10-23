@@ -38,10 +38,10 @@ void daemon::load_config()
 
     working_dir = key_exists(config, string("dir")) ? config["dir"] : "/";
     int uid = key_exists(config, string("dir")) ? uid_from_name(config["user"]) : user->uid;
-    if (uid < 0) throw strprintf("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
-    if (!user->can_run_as_uid[uid]) throw strprintf("%s is not allowed to run as %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
+    if (uid < 0) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
+    if (!user->can_run_as_uid[uid]) throw_str("%s is not allowed to run as %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
     run_as_uid = uid;
-    if (!key_exists(config, string("start"))) throw strprintf("Missing \"start\" in %s\n", config_file.c_str());
+    if (!key_exists(config, string("start"))) throw_str("Missing \"start\" in %s\n", config_file.c_str());
     start_command = config["start"];
     autostart = !key_exists(config, string("autostart")) || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
     log_output = key_exists(config, string("output")) && config["output"] == "log";
@@ -80,11 +80,11 @@ void daemon::start(bool respawn)
     load_config(); // Make sure we are up to date.
 
     int fd[2];
-    if (pipe(fd) <0) throw strprintf("Couldn't pipe: %s", strerror(errno));
+    if (pipe(fd) <0) throw_strerr("Couldn't pipe");
     fcntl(fd[0], F_SETFD, 1);
     fcntl(fd[1], F_SETFD, 1);
     int child = fork();
-    if (child == -1) throw strprintf("Fork failed: %s\n", strerror(errno));
+    if (child == -1) throw_strerr("Fork failed\n");
     if (child) {
         close(fd[1]);
         char err[1000]="";
@@ -107,22 +107,22 @@ void daemon::start(bool respawn)
     try {
         close(fd[0]);
         create_sock_dir();
-        setgid(user->gid)          == -1 && throw_str("Couldn't set gid to %d: %s\n", user->gid, strerror(errno));
-        setuid(run_as_uid)         == -1 && throw_str("Couldn't set uid to %d (%s): %s\n", user->gid, user->name.c_str(), strerror(errno));
-        chdir(working_dir.c_str()) == -1 && throw_str("Couldn't change to directory %s: %s", working_dir.c_str(), strerror(errno));
+        setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
+        setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
+        chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
         if (log_output) {
             struct stat st;
             if (stat(user->log_dir().c_str(), &st) != 0)
-                mkdir(user->log_dir().c_str(), 0770) == -1 && throw_str("Couldn't create log directory %s: %s", user->log_dir().c_str(), strerror(errno));
+                mkdir(user->log_dir().c_str(), 0770) == -1 && throw_strerr("Couldn't create log directory %s", user->log_dir().c_str());
             close(1);
             close(2);
             string logfile=user->log_dir() + name + ".log";
-            open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_str("Couldn't open log file %s: %s", logfile.c_str(), strerror(errno));
-            dup2(1,2) == -1 && throw_str("Couldn't dup stdout to stderr: %s", strerror(errno));
+            open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
+            dup2(1,2) == -1 && throw_strerr("Couldn't dup stdout to stderr");
         }
         const char *const env[] = { (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
-        throw strprintf("Couldn't exec: %s", strerror(errno));
+        throw_strerr("Couldn't exec");
     } catch (string e) {
         write(fd[1], e.c_str(), e.length()+1/*NULL*/);
         close(fd[1]);
