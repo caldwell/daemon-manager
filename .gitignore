@@ -3,3 +3,5 @@
 *~
 daemon-manager
 dmctl
+\#*
+*.[0-9]
