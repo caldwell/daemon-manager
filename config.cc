@@ -6,19 +6,11 @@
 #include "stringutil.h"
 #include <iostream>
 #include <fstream>
-#include <string.h>
+#include <string>
 
 using namespace std;
 
-static char *trim(char *s)
-{
-    while (*s && isspace(*s)) // Front
-        s++;
-    for (int i=strlen(s)-1; i>=0; i--) // Back
-        if (!isspace(s[i])) break;
-        else s[i] = '\0';
-    return s;
-}
+static string remove_comment(string in) { return trim(in.substr(0, min(in.length(), in.find('#')))); }
 
 struct master_config parse_master_config(string path)
 {
@@ -28,42 +20,36 @@ struct master_config parse_master_config(string path)
     map<string,vector<string> > *section = NULL;
 
     int n=0;
-    char line[1000];
+    string line;
     while (in.good()) {
-        in.getline(line, sizeof(line));
+        getline(in, line);
         n++;
 
-        char *comment = strchr(line, '#');
-        if (comment) *comment = '\0';
+        line = remove_comment(line);
+        if (line.empty()) continue;
 
-        char *l = trim(line);
-        if (*l == '\0') continue;
+        if (line[0] == '[') {
+            size_t end = line.find(']');
+            if (end == line.npos) throw_str("%s:%d missing ']' from section header", path.c_str(), n);
+            string sect = line.substr(1, end-1);
+            if (trim(line.substr(end+1)).length()) throw_str("%s:%d Junk at end of section header line", path.c_str(), n);
 
-        if (*l == '[') {
-            char *sect = l+1;
-            char *end = strchr(sect, ']');
-            if (!end) throw_str("%s:%d missing ']' from section header", path.c_str(), n);
-            *end = '\0';
-            l = end+1;
-            while (*l && isspace(*l)) l++;
-            if (*l != '\0') throw_str("%s:%d Junk at end of section header line", path.c_str(), n);
-
-            if      (strcmp(sect, "runs_as") == 0) section = &config.runs_as;
-            else if (strcmp(sect, "manages") == 0) section = &config.manages;
-            else throw_str("%s:%d Illegal section \"%s\"", path.c_str(), n, sect);
+            if      (sect == "runs_as") section = &config.runs_as;
+            else if (sect == "manages") section = &config.manages;
+            else throw_str("%s:%d Illegal section \"%s\"", path.c_str(), n, sect.c_str());
             continue;
         }
 
         if (!section) throw_str("%s:%d Line before section header", path.c_str(), n);
 
-        char *key = strsep(&l, ":");
-        key = trim(key);
+        size_t sep;
+        string key = trim(line.substr(0, sep=line.find(':')));
 
         vector<string> list;
-        if (l)
-            split(list, string(l), string(","));
+        if (sep != line.npos)
+            split(list, trim(line.substr(sep+1)), string(","));
 
-        (*section)[string(key)] = uniq(list);
+        (*section)[key] = uniq(list);
     }
 
     return config;
@@ -75,21 +61,19 @@ map<string,string> parse_daemon_config(string path)
     map<string,string> config;
 
     int n=0;
-    char line[1000];
+    string line;
     while (in.good()) {
-        in.getline(line, sizeof(line));
+        getline(in, line);
         n++;
 
-        char *comment = strchr(line, '#');
-        if (comment) *comment = '\0';
+        line = remove_comment(line);
+        if (line.empty()) continue;
 
-        char *l = trim(line);
-        if (*l == '\0') continue;
+        size_t sep;
+        string key = trim(line.substr(0, sep=line.find('=')));
+        if (sep == line.npos) throw_str("%s:%d Missing '=' after key", path.c_str(), n);
 
-        char *key = strsep(&l, "=");
-        if (!l) throw_str("%s:%d Missing '=' after key", path.c_str(), n);
-
-        config[trim(key)] = trim(l);
+        config[key] = trim(line.substr(sep+1));
     }
     return config;
 }
