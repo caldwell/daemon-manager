@@ -41,22 +41,22 @@ struct master_config parse_master_config(string path)
         if (*l == '[') {
             char *sect = l+1;
             char *end = strchr(sect, ']');
-            if (!end) throw strprintf("Bad config file %s:%d missing ']' from section header", path.c_str(), n);
+            if (!end) throw_str("Bad config file %s:%d missing ']' from section header", path.c_str(), n);
             *end = '\0';
             l = end+1;
             while (*l && isspace(*l)) l++;
-            if (*l != '\0') throw strprintf("Bad config file %s:%d Junk at end of section header line", path.c_str(), n);
+            if (*l != '\0') throw_str("Bad config file %s:%d Junk at end of section header line", path.c_str(), n);
 
             if      (strcmp(sect, "runs_as") == 0) section = &config.runs_as;
             else if (strcmp(sect, "manages") == 0) section = &config.manages;
-            else throw strprintf("Bad config file %s:%d Illegal section \"%s\"", path.c_str(), n, sect);
+            else throw_str("Bad config file %s:%d Illegal section \"%s\"", path.c_str(), n, sect);
             continue;
         }
 
-        if (!section) throw strprintf("Bad config file %s:%d Line before section header", path.c_str(), n);
+        if (!section) throw_str("Bad config file %s:%d Line before section header", path.c_str(), n);
 
         char *key = strsep(&l, "=");
-        if (!l) throw strprintf("Bad config file %s:%d Missing '=' after key", path.c_str(), n);
+        if (!l) throw_str("Bad config file %s:%d Missing '=' after key", path.c_str(), n);
         key = trim(key);
 
         vector<string> list;
@@ -88,7 +88,7 @@ map<string,string> parse_daemon_config(string path)
         if (*l == '\0') continue;
 
         char *key = strsep(&l, "=");
-        if (!l) throw strprintf("Bad config file %s:%d Missing '=' after key", path.c_str(), n);
+        if (!l) throw_str("Bad config file %s:%d Missing '=' after key", path.c_str(), n);
 
         config[trim(key)] = trim(l);
     }
