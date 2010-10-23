@@ -56,7 +56,6 @@ struct master_config parse_master_config(string path)
         if (!section) throw_str("Bad config file %s:%d Line before section header", path.c_str(), n);
 
         char *key = strsep(&l, "=");
-        if (!l) throw_str("Bad config file %s:%d Missing '=' after key", path.c_str(), n);
         key = trim(key);
 
         vector<string> list;
