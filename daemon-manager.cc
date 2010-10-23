@@ -403,14 +403,10 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     }
 
     try {
-        class daemon *daemon;
-        for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-            if ((*d)->id == arg) {
-                daemon = *d;
-                goto legit;
-            }
-        throw_str("unknown id \"%s\"", arg.c_str());
-      legit:
+        vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
+        if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
+        class daemon *daemon = *d;
+
         if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
                                    else daemon->start();
         else if (cmd == "stop")    daemon->stop();
