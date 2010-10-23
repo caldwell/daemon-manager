@@ -182,8 +182,10 @@ static vector<user*> user_list_from_config(struct master_config config)
                     (*u)->can_run_as_uid[uid] = true;
             }
         }
-        if (config.manages.find((*u)->name) != config.manages.end()) {
-            for (config_list_it name = config.manages[(*u)->name].begin(); name != config.manages[(*u)->name].end(); name++) {
+        if (config.manages.find((*u)->name) != config.manages.end() || (*u)->uid == 0) {
+            vector<string> *manage_list = (*u)->uid == 0 ? &unique_users // Root can manage all users.
+                                                         : &config.manages[(*u)->name];
+            for (config_list_it name = manage_list->begin(); name != manage_list->end(); name++) {
                 if (!users[*name])
                     log(LOG_ERR, "%s can't manage non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
                 else
