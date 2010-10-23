@@ -52,5 +52,12 @@ class daemon {
 
 bool daemon_compare(class daemon *a, class daemon *b);
 
+// Use as a unary predicate for find_if and similar.
+class daemon_id_match {
+    public: string &id;
+            daemon_id_match(string &id) : id(id) {}
+            bool operator()(class daemon *d) { return d->id == id; }
+};
+
 #endif /* __DAEMON_H__ */
 
