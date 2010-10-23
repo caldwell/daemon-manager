@@ -10,6 +10,7 @@
 #include <poll.h>
 #include <stdexcept>
 #include "user.h"
+#include "stringutil.h"
 
 using namespace std;
 
@@ -22,6 +23,7 @@ static void usage(char *me, int exit_code)
 }
 
 static string do_command(string command, user *me);
+static string canonify(string id, user *u);
 
 int main(int argc, char **argv)
 {
@@ -40,7 +42,7 @@ int main(int argc, char **argv)
 
     string command = argv[1];
     if (argc == 3)
-        command += string(" ") + argv[2];
+        command += string(" ") + canonify(argv[2], me);
 
     try {
         string resp = do_command(command, me);
@@ -78,6 +80,43 @@ static string do_command(string command, user *me)
     if (strcmp(buf, "OK\n") == 0)     return string("");
     if (strncmp(buf, "OK: ", 4) == 0) return string(buf+4);
     throw std::runtime_error(buf);
+}
+
+static string canonify(string id, user *u)
+{
+    if (id.find('/') != id.npos) // already fully qualified
+        return id;
+
+    // Ask daemon-manager for the list of ids we can manage.
+    string id_list;
+    try {
+        id_list = chomp(do_command("list", u));
+    } catch(std::exception &e) {
+        errx(1, "'list' failed: %s", e.what());
+    }
+
+    // Look for ids that match our unqualified id.
+    // "th" will match "david/this" and "david/that" but not "david/other"
+    vector<string> candidates;
+    vector<string> ids;
+    split(ids, id_list, ",");
+    for (vector<string>::iterator i=ids.begin(); i != ids.end(); i++) {
+        size_t start;
+        if ((start = i->find(id)) != i->npos &&
+            start > 0 && (*i)[start-1] == '/')
+            candidates.push_back(*i);
+    }
+
+    if (candidates.size() == 1)
+        return candidates[0];
+
+    if (candidates.size() == 0)
+        errx(EXIT_FAILURE, "id \"%s\" not found", id.c_str());
+
+    fprintf(stderr, "id \"%s\" is ambiguous. Which did you mean?\n", id.c_str());
+    for (vector<string>::iterator c=candidates.begin(); c != candidates.end(); c++)
+        fprintf(stderr, "\t%s\n", c->c_str());
+    exit(EXIT_FAILURE);
 }
 
 /*
