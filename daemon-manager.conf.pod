@@ -9,10 +9,10 @@ daemon-manager.conf - Master configuration file for Daemon Manager
   user1: www-data
   # user2 is allowed to launch daemons but only as itself
   user2
-  user3: nobody, www-data
+  user3: nobody, www-data # Comments can go anywhere.
 
   [manages]
-  user1: user2, user3
+  user1 : user2, user3 # whitespace is generally ignored
   user3: user1
 
 
