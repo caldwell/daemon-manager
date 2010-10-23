@@ -25,6 +25,7 @@ class daemon {
     std::string start_command;
     bool autostart;
     bool log_output;
+    bool want_sockfile;
 
     // stats:
     run_state state;

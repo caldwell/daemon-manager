@@ -45,6 +45,7 @@ void daemon::load_config()
     start_command = config["start"];
     autostart = !key_exists(config, string("autostart")) || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
     log_output = key_exists(config, string("output")) && config["output"] == "log";
+    want_sockfile = key_exists(config, string("sockfile")) && strchr("YyTt1Oo", config["sockfile"].c_str()[0]);
 
     config_file_stamp = st.st_mtime;
 }
@@ -106,7 +107,8 @@ void daemon::start(bool respawn)
     // Child
     try {
         close(fd[0]);
-        create_sock_dir();
+        if (want_sockfile)
+            create_sock_dir();
         setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
         setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
         chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
@@ -120,7 +122,7 @@ void daemon::start(bool respawn)
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2) == -1 && throw_strerr("Couldn't dup stdout to stderr");
         }
-        const char *const env[] = { (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
+        const char *const env[] = { !want_sockfile ? NULL : (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
