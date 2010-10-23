@@ -52,6 +52,10 @@ section:
 
   bob
 
+A trailing ':' is also acceptable:
+
+  bob:
+
 The C<manages> section allows the system administrator to appoint users that
 can start and stop daemons on behalf of other users. It has the same syntax as
 the C<runs_as> section:
