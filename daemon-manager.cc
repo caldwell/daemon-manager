@@ -408,19 +408,19 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n";
     }
 
-        vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
-        if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
-        class daemon *daemon = *d;
+    vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
+    if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
+    class daemon *daemon = *d;
 
-        if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
-                                   else daemon->start();
-        else if (cmd == "stop")    daemon->stop();
-        else if (cmd == "restart") { daemon->stop(); daemon->start(); }
-        else throw_str("bad command \"%s\"", cmd.c_str());
-    } catch (std::exception &e) {
-        return string("ERR: ") + e.what() + "\n";
-    }
-    return "OK\n";
+    if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
+                               else daemon->start();
+    else if (cmd == "stop")    daemon->stop();
+    else if (cmd == "restart") { daemon->stop(); daemon->start(); }
+    else throw_str("bad command \"%s\"", cmd.c_str());
+  } catch (std::exception &e) {
+      return string("ERR: ") + e.what() + "\n";
+  }
+  return "OK\n";
 }
 
 static void dump_config(struct master_config config)
