@@ -6,14 +6,14 @@ daemon-manager.conf - Master configuration file for Daemon Manager
 
   # Example configuration file
   [runs_as]
-  user1 = www-data
+  user1: www-data
   # user2 is allowed to launch daemons but only as itself
   user2
-  user3 = nobody, www-data
+  user3: nobody, www-data
 
   [manages]
-  user1 = user2, user3
-  user3 = user1
+  user1: user2, user3
+  user3: user1
 
 
 =head1 DESCRIPTION
@@ -41,7 +41,7 @@ and
 The C<runs_as> section identifes which users are allowed to launch daemons. It
 looks like this:
 
-  bob = mary, bruce, rhonda
+  bob: mary, bruce, rhonda
 
 That line means that I<bob> is allowed to start the demons in his home
 directory and have them run as I<bob>, I<mary>, I<bruce>, or I<rhonda>.  Users
@@ -56,7 +56,7 @@ The C<manages> section allows the system administrator to appoint users that
 can start and stop daemons on behalf of other users. It has the same syntax as
 the C<runs_as> section:
 
-  larry = bob, martha
+  larry: bob, martha
 
 That line means that I<larry> can start, stop, restart, and inspect I<bob> or
 I<martha>'s daemons. He will not be able to see or control I<bruce>'s daemons,

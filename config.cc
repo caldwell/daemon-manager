@@ -56,7 +56,7 @@ struct master_config parse_master_config(string path)
 
         if (!section) throw_str("%s:%d Line before section header", path.c_str(), n);
 
-        char *key = strsep(&l, "=");
+        char *key = strsep(&l, ":");
         key = trim(key);
 
         vector<string> list;
