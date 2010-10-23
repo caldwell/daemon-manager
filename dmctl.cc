@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <poll.h>
+#include <stdexcept>
 #include "user.h"
 
 using namespace std;
@@ -19,6 +20,8 @@ static void usage(char *me, int exit_code)
            "\t%s start|stop|restart <daemon-id>\n", me, me);
     exit(exit_code);
 }
+
+static string do_command(string command, user *me);
 
 int main(int argc, char **argv)
 {
@@ -38,6 +41,19 @@ int main(int argc, char **argv)
     string command = argv[1];
     if (argc == 3)
         command += string(" ") + argv[2];
+
+    try {
+        string resp = do_command(command, me);
+        printf("%s", resp.c_str());
+        exit(EXIT_SUCCESS);
+    } catch(std::exception &e) {
+        fprintf(stderr, "%s\n", e.what());
+        exit(EXIT_FAILURE);
+    }
+}
+
+static string do_command(string command, user *me)
+{
     int wrote = write(me->command_socket, command.c_str(), command.length());
     if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
@@ -59,13 +75,9 @@ int main(int argc, char **argv)
     if (red == 0) errx(1, "No response from daemon-manager.");
 
     buf[red] = '\0';
-    if (strcmp(buf, "OK\n") == 0) exit(0);
-    if (strncmp(buf, "OK: ", 4) == 0) {
-        printf("%s", buf+4);
-        exit(0);
-    }
-    printf("%s", buf);
-    exit(1);
+    if (strcmp(buf, "OK\n") == 0)     return string("");
+    if (strncmp(buf, "OK: ", 4) == 0) return string(buf+4);
+    throw std::runtime_error(buf);
 }
 
 /*
