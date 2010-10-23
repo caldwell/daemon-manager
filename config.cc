@@ -3,6 +3,7 @@
 #include "config.h"
 #include "strprintf.h"
 #include "uniq.h"
+#include "stringutil.h"
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -59,9 +60,8 @@ struct master_config parse_master_config(string path)
         key = trim(key);
 
         vector<string> list;
-        for (char *val; val = strsep(&l, ",");)
-            if (trim(val)[0] != '\0') // Allow "user = " type lines.
-                list.push_back(string(trim(val)));
+        if (l)
+            split(list, string(l), string(","));
 
         (*section)[string(key)] = uniq(list);
     }
