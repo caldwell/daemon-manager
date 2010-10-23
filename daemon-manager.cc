@@ -369,11 +369,17 @@ static string daemon_id_list(vector<class daemon*> daemons)
 
 static string do_command(string command_line, user *user, vector<class daemon*> *daemons)
 {
+  try {
     vector<class daemon*> manageable = manageable_by_user(user, *daemons);
     size_t space = command_line.find_first_of(" ");
     string cmd = command_line.substr(0, space);
     string arg = space != command_line.npos ? command_line.substr(space+1, command_line.length()) : "";
     log(LOG_DEBUG, "line: \"%s\" cmd: \"%s\", arg: \"%s\"\n", command_line.c_str(), cmd.c_str(), arg.c_str());
+
+    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart" };
+
+    if (find(valid_commands, valid_commands + lengthof(valid_commands), cmd) == valid_commands + lengthof(valid_commands))
+        throw_str("bad command \"%s\"", cmd.c_str());
 
     if (cmd == "list") {
         return "OK: " + daemon_id_list(manageable) + "\n";
@@ -402,7 +408,6 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n";
     }
 
-    try {
         vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
         if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
         class daemon *daemon = *d;
