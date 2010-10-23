@@ -24,14 +24,14 @@ map<string,user*> users;
 user::user(string name)
 {
     struct passwd *p = getpwnam(name.c_str());
-    if (!p) throw strprintf("No user named \"%s\"", name.c_str());
+    if (!p) throw_str("No user named \"%s\"", name.c_str());
     init(p);
 }
 
 user::user(uid_t uid)
 {
     struct passwd *p = getpwuid(uid);
-    if (!p) throw strprintf("No user with uid %d", uid);
+    if (!p) throw_str("No user with uid %d", uid);
     init(p);
 }
 
@@ -129,7 +129,7 @@ vector<string> user::config_files()
 
     globfree(&gl);
     if (status != GLOB_NOMATCH && status != 0)
-        throw strprintf("Glob failed: %d/%s", status, strerror(errno));
+        throw_strerr("Glob failed: %d", status);
 
     return files;
 }
