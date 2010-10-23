@@ -1,3 +1,5 @@
+VERSION=0.7
+
 EXE=daemon-manager dmctl
 all: $(EXE)
 
@@ -5,6 +7,7 @@ daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.cc pass
 
 dmctl daemon-manager: CC=g++
 dmctl daemon-manager: CXXFLAGS += -MMD -g -Wall -Wextra -Wno-parentheses
+dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\"
 dmctl daemon-manager: LDFLAGS  += -g
 
 dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o
@@ -17,7 +20,7 @@ clean:
 MAN=dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
 all: $(MAN)
 
-PODFLAGS=--release=daemon-manager-0.1 --center="Daemon Manager Documentation"
+PODFLAGS=--release=daemon-manager-$(VERSION) --center="Daemon Manager Documentation"
 
 %.1 : %.cc
 	pod2man $(PODFLAGS) $< $@

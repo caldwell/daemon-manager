@@ -30,6 +30,7 @@ static string canonify(string id, user *u);
 int main(int argc, char **argv)
 {
     options o(argc, argv);
+    if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
     if (o.bad_args() || o.args.size() < 1 || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
 

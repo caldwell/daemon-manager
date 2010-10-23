@@ -58,6 +58,7 @@ int main(int argc, char **argv)
     if (o.get("verbose",    'v'))               { verbose = o.argm.size(); }
     if (o.get("foreground", 'f'))               { foreground = true; }
     if (o.get("debug",      'd'))               { debug = foreground = true; }
+    if (o.get("version"))                       { printf("daemon-manager version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.bad_args() ||
         o.args.size()) usage(argv[0], EXIT_FAILURE);
 
