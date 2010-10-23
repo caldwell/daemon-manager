@@ -409,13 +409,13 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
                 daemon = *d;
                 goto legit;
             }
-        throw strprintf("unknown id \"%s\"", arg.c_str());
+        throw_str("unknown id \"%s\"", arg.c_str());
       legit:
-        if      (cmd == "start")   if (daemon->pid) throw strprintf("Already running \"%s\"", daemon->id.c_str());
+        if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
                                    else daemon->start();
         else if (cmd == "stop")    daemon->stop();
         else if (cmd == "restart") { daemon->stop(); daemon->start(); }
-        else throw strprintf("bad command \"%s\"", cmd.c_str());
+        else throw_str("bad command \"%s\"", cmd.c_str());
     } catch (string e) {
         return "ERR: " + e + "\n";
     }
