@@ -49,7 +49,7 @@ int main(int argc, char **argv)
         printf("%s", resp.c_str());
         exit(EXIT_SUCCESS);
     } catch(std::exception &e) {
-        fprintf(stderr, "%s\n", e.what());
+        fprintf(stderr, "%s", e.what());
         exit(EXIT_FAILURE);
     }
 }
