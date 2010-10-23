@@ -217,7 +217,7 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
                         delete d;
                     }
                 } catch(std::exception &e) {
-                    log(LOG_ERR, "Skipping %s's config file %s: %s", (*u)->name.c_str(), conf->c_str(), e.what());
+                    log(LOG_ERR, "Skipping %s's config file %s: %s\n", (*u)->name.c_str(), conf->c_str(), e.what());
                 }
             }
         } catch (std::exception &e) {
