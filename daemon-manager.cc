@@ -390,6 +390,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     if (cmd == "status") {
         string resp = strprintf("%-30s %-15s %6s %8s %8s %6s %6s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
         for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
+          if (arg.empty() || arg == (*d)->id)
             resp += strprintf("%-30s %-15s %6d %8d %8d %6d %6d\n",
                               (*d)->id.c_str(),
                               (*d)->state_str().c_str(),
