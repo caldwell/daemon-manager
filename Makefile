@@ -1,4 +1,5 @@
-all: daemon-manager dmctl
+EXE=daemon-manager dmctl
+all: $(EXE)
 
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.cc passwd.o daemon.o log.o
 
@@ -11,7 +12,7 @@ dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o
 -include *.d
 
 clean:
-	rm *.o *.d daemon-manager dmctl
+	rm -f *.o *.d $(EXE)
 
 all: dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
 
