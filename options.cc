@@ -3,6 +3,8 @@
 #include "options.h"
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <stdio.h>
 
 using namespace std;
 
