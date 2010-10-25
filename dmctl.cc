@@ -66,10 +66,6 @@ static string do_command(string command, user *me)
     if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
 
-    // Drain the FIFO
-    char buf[1000];
-    while (read(me->command_socket, buf, sizeof(buf)-1) > 0) {}
-
     // Wait for our response:
     struct pollfd fd[1];
     fd[0].fd = me->command_socket;
@@ -78,6 +74,7 @@ static string do_command(string command, user *me)
     if (got < 0)  err(1, "Poll failed");
     if (got == 0) err(1, "Poll timed out.");
 
+    char buf[1000];
     int red = read(me->command_socket, buf, sizeof(buf)-1);
     if (red < 0)   err(1, "No response from daemon-manager");
     if (red == 0) errx(1, "No response from daemon-manager.");
