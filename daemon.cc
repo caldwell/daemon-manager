@@ -6,7 +6,6 @@
 #include "passwd.h"
 #include "strprintf.h"
 #include "log.h"
-#include "key-exists.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -36,16 +35,16 @@ void daemon::load_config()
 
     map<string,string> config = parse_daemon_config(config_file);
 
-    working_dir = key_exists(config, string("dir")) ? config["dir"] : "/";
-    int uid = key_exists(config, string("dir")) ? uid_from_name(config["user"]) : user->uid;
+    working_dir = config.count("dir") ? config["dir"] : "/";
+    int uid = config.count("dir") ? uid_from_name(config["user"]) : user->uid;
     if (uid < 0) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
     if (!user->can_run_as_uid[uid]) throw_str("%s is not allowed to run as %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
     run_as_uid = uid;
-    if (!key_exists(config, string("start"))) throw_str("Missing \"start\" in %s\n", config_file.c_str());
+    if (!config.count("start")) throw_str("Missing \"start\" in %s\n", config_file.c_str());
     start_command = config["start"];
-    autostart = !key_exists(config, string("autostart")) || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
-    log_output = key_exists(config, string("output")) && config["output"] == "log";
-    want_sockfile = key_exists(config, string("sockfile")) && strchr("YyTt1Oo", config["sockfile"].c_str()[0]);
+    autostart = !config.count("autostart") || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
+    log_output = config.count("output") && config["output"] == "log";
+    want_sockfile = config.count("sockfile") && strchr("YyTt1Oo", config["sockfile"].c_str()[0]);
 
     config_file_stamp = st.st_mtime;
 }

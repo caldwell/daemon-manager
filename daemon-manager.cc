@@ -22,7 +22,6 @@
 #include "strprintf.h"
 #include "log.h"
 #include "uniq.h"
-#include "key-exists.h"
 #include "options.h"
 
 #include <vis.h>
@@ -271,7 +270,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         if (got > 0) {
             for (size_t i=0; i<lengthof(fd); i++) {
                 if (fd[i].revents & POLLIN) {
-                    if (key_exists(listeners, fd[i].fd)) {
+                    if (listeners.count(fd[i].fd)) {
                         struct sockaddr_un addr;
                         socklen_t addr_len;
                         int client = accept(fd[i].fd, (struct sockaddr*) &addr, &addr_len);
@@ -281,7 +280,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                         }
                         fcntl(client, F_SETFL, O_NONBLOCK);
                         clients[client] = listeners[fd[i].fd];
-                    } else if (key_exists(clients, fd[i].fd)) {
+                    } else if (clients.count(fd[i].fd)) {
                         char buf[1000];
                         int red = read(fd[i].fd, buf, sizeof(buf)-1);
                         if (red) {
@@ -295,7 +294,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                         }
                     }
                 }
-                if (fd[i].revents & POLLHUP && key_exists(clients, fd[i].fd)) {
+                if (fd[i].revents & POLLHUP && clients.count(fd[i].fd)) {
                     close(fd[i].fd);
                     clients.erase(fd[i].fd);
                 }
