@@ -122,7 +122,17 @@ void daemon::start(bool respawn)
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2) == -1 && throw_strerr("Couldn't dup stdout to stderr");
         }
-        const char *const env[] = { !want_sockfile ? NULL : (string("SOCK_FILE=")+sock_file()).c_str(), NULL };
+        vector<string> elist;
+        elist.push_back("HOME=" + user->homedir);
+        elist.push_back("LOGNAME=" + user->name);
+        elist.push_back("SHELL=/bin/sh");
+        elist.push_back("PATH=/usr/bin:/bin");
+        if (want_sockfile)
+            elist.push_back("SOCK_FILE=" + sock_file());
+        const char *env[elist.size()+1];
+        for (int i=0; i<elist.size(); i++)
+            env[i] = elist[i].c_str();
+        env[elist.size()] = NULL;
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
