@@ -278,6 +278,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                             log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
                             continue;
                         }
+                        fcntl(client, F_SETFD, 1);
                         fcntl(client, F_SETFL, O_NONBLOCK);
                         clients[client] = listeners[fd[i].fd];
                     } else if (clients.count(fd[i].fd)) {
