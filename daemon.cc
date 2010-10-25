@@ -130,7 +130,7 @@ void daemon::start(bool respawn)
         if (want_sockfile)
             elist.push_back("SOCK_FILE=" + sock_file());
         const char *env[elist.size()+1];
-        for (int i=0; i<elist.size(); i++)
+        for (size_t i=0; i<elist.size(); i++)
             env[i] = elist[i].c_str();
         env[elist.size()] = NULL;
         execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
