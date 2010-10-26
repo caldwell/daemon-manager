@@ -70,8 +70,8 @@ static void mkdirs(string path, mode_t mode, int uid=-1, int gid=-1)
 void daemon::create_sock_dir()
 {
     mkdirs("/var/run/daemon-manager/", 0755);
-    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0770, run_as_uid);
-    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0770, run_as_uid, user->gid);
+    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
+    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
 }
 
 void daemon::start(bool respawn)
