@@ -167,7 +167,7 @@ void daemon::respawn()
     if (uptime < 60) cooldown = min((time_t)60, cooldown + 10); // back off if it's dying too often
     if (uptime > 60) cooldown = 0; // Clear cooldown on good behavior
     if (cooldown) {
-        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id.c_str(), cooldown);
+        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id.c_str(), (int)cooldown);
         cooldown_start = now;
         state = coolingdown;
     } else
