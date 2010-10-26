@@ -24,8 +24,6 @@
 #include "uniq.h"
 #include "options.h"
 
-#include <vis.h>
-
 using namespace std;
 
 static void usage(char *me, int exit_code)
