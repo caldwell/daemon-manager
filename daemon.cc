@@ -122,7 +122,7 @@ void daemon::start(bool respawn)
                     start_command.c_str());
         }
         setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
-        setuid(run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
+        setuid(run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", run_as.uid, user->name.c_str());
         chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
 
         vector<string> elist;
