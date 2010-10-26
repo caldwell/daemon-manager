@@ -109,19 +109,23 @@ void daemon::start(bool respawn)
         close(fd[0]);
         if (want_sockfile)
             create_sock_dir();
-        setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
-        setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
-        chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
         if (log_output) {
             struct stat st;
-            if (stat(user->log_dir().c_str(), &st) != 0)
+            if (stat(user->log_dir().c_str(), &st) != 0) {
                 mkdir(user->log_dir().c_str(), 0770) == -1 && throw_strerr("Couldn't create log directory %s", user->log_dir().c_str());
+                chown(user->log_dir().c_str(), user->uid, user->gid)   == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", user->log_dir().c_str(), user->uid, user->gid);
+            }
             close(1);
             close(2);
             string logfile=user->log_dir() + name + ".log";
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) == 1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2) == -1 && throw_strerr("Couldn't dup stdout to stderr");
+            chown(logfile.c_str(), user->uid, user->gid)               == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", logfile.c_str(), user->uid, user->gid);
         }
+        setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
+        setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
+        chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
+
         vector<string> elist;
         elist.push_back("HOME=" + user->homedir);
         elist.push_back("LOGNAME=" + user->name);
