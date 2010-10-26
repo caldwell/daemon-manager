@@ -6,17 +6,18 @@
 #include <map>
 #include <vector>
 #include <sys/un.h>
+#include <sys/types.h>
 
 using namespace std;
 
 class user {
   public:
     string name;
-    int uid;
-    int gid;
+    uid_t uid;
+    gid_t gid;
     string homedir;
     int command_socket;
-    map<int,bool> can_run_as_uid;
+    map<uid_t,bool> can_run_as_uid;
     vector<user*> manages;
 
     user(string name);

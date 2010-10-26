@@ -167,8 +167,8 @@ static vector<user*> user_list_from_config(struct master_config config)
         (*u)->can_run_as_uid[(*u)->uid] = true; // You can always run as yourself, however ill-advised.
         if (config.runs_as.find((*u)->name) != config.runs_as.end()) {
             for (config_list_it name = config.runs_as[(*u)->name].begin(); name != config.runs_as[(*u)->name].end(); name++) {
-                int uid = uid_from_name(*name);
-                if (uid < 0)
+                uid_t uid = uid_from_name(*name);
+                if (uid == (uid_t)-1)
                     log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
                 else
                     (*u)->can_run_as_uid[uid] = true;
