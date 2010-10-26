@@ -69,13 +69,6 @@ static void mkdirs(string path, mode_t mode, int uid=-1, int gid=-1)
     chown(path.c_str(), uid, gid)    == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", path.c_str(), uid, gid);
 }
 
-void daemon::create_sock_dir()
-{
-    mkdirs("/var/run/daemon-manager/", 0755);
-    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
-    mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
-}
-
 void daemon::start(bool respawn)
 {
     log(LOG_INFO, "Starting %s\n", id.c_str());
@@ -109,8 +102,11 @@ void daemon::start(bool respawn)
     // Child
     try {
         close(fd[0]);
-        if (want_sockfile)
-            create_sock_dir();
+        if (want_sockfile) {
+            mkdirs("/var/run/daemon-manager/", 0755);
+            mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
+            mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
+        }
         if (log_output) {
             mkdirs(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
