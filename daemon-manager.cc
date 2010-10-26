@@ -183,9 +183,9 @@ static vector<user*> user_list_from_config(struct master_config config)
                 else
                     (*u)->manages.push_back(users[*name]);
             }
-            if (!contains((*u)->manages, *u)) // We can always manage ourselves.
-                (*u)->manages.push_back(*u);
         }
+        if (!contains((*u)->manages, *u)) // We can always manage ourselves.
+            (*u)->manages.push_back(*u);
     }
     return user_list;
 }
