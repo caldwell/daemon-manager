@@ -112,11 +112,7 @@ void daemon::start(bool respawn)
         if (want_sockfile)
             create_sock_dir();
         if (log_output) {
-            struct stat st;
-            if (stat(user->log_dir().c_str(), &st) != 0) {
-                mkdir(user->log_dir().c_str(), 0770)                   == -1 && throw_strerr("Couldn't create log directory %s", user->log_dir().c_str());
-                chown(user->log_dir().c_str(), user->uid, user->gid)   == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", user->log_dir().c_str(), user->uid, user->gid);
-            }
+            mkdirs(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
             string logfile=user->log_dir() + name + ".log";
