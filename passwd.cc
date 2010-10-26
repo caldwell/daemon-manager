@@ -29,4 +29,18 @@ string name_from_gid(int gid)
     return string(g->gr_name);
 }
 
+pwent::pwent(std::string name) : valid(0)
+{
+    struct passwd *p = getpwnam(name.c_str());
+    if (!p)
+        return;
+    valid = true;
 
+    name   = p->pw_name  ;
+    passwd = p->pw_passwd;
+    uid    = p->pw_uid   ;
+    gid    = p->pw_gid   ;
+    gecos  = p->pw_gecos ;
+    dir    = p->pw_dir   ;
+    shell  = p->pw_shell ;
+}
