@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <algorithm>
+#include <stdexcept>
 #include <libgen.h>
 
 using namespace std;
@@ -91,7 +92,7 @@ void daemon::start(bool respawn)
         int red = read(fd[0], &err, sizeof(err));
         close(fd[0]);
         if(red > 0)
-            throw string(err);
+            throw runtime_error(string(err));
         pid = child; // Parent
         log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), pid);
         respawn_time = time(NULL);
