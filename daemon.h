@@ -3,6 +3,7 @@
 #define __DAEMON_H__
 
 #include "user.h"
+#include "passwd.h"
 #include <string>
 #include <time.h>
 
@@ -21,7 +22,7 @@ class daemon {
 
     // From config file:
     std::string working_dir;
-    int run_as_uid;
+    pwent run_as;
     std::string start_command;
     bool autostart;
     bool log_output;

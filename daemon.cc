@@ -39,10 +39,10 @@ void daemon::load_config()
     map<string,string> config = parse_daemon_config(config_file);
 
     working_dir = config.count("dir") ? config["dir"] : "/";
-    int uid = config.count("user") ? uid_from_name(config["user"]) : user->uid;
-    if (uid < 0) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
-    if (!user->can_run_as_uid[uid]) throw_str("%s is not allowed to run as %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
-    run_as_uid = uid;
+    pwent pw = pwent(config.count("user") ? config["user"] : user->name);
+    if (!pw.valid) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
+    if (!user->can_run_as_uid.count(pw.uid)) throw_str("%s is not allowed to run as %s[%u] in %s\n", user->name.c_str(), config["user"].c_str(), pw.uid, config_file.c_str());
+    run_as = pw;
     if (!config.count("start")) throw_str("Missing \"start\" in %s\n", config_file.c_str());
     start_command = config["start"];
     autostart = !config.count("autostart") || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
@@ -60,7 +60,7 @@ bool daemon::exists()
 
 string daemon::sock_file()
 {
-    return "/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + id + ".socket";
+    return "/var/run/daemon-manager/" + run_as.name + "/" + id + ".socket";
 }
 
 void daemon::start(bool respawn)
@@ -98,8 +98,8 @@ void daemon::start(bool respawn)
         close(fd[0]);
         if (want_sockfile) {
             mkdir_ug("/var/run/daemon-manager/", 0755);
-            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
-            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0770, run_as_uid, user->gid);
+            mkdir_ug("/var/run/daemon-manager/" + run_as.name + "/", 0755, run_as.uid);
+            mkdir_ug("/var/run/daemon-manager/" + run_as.name + "/" + user->name + "/", 0770, run_as.uid, user->gid);
         }
         if (log_output) {
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
@@ -122,7 +122,7 @@ void daemon::start(bool respawn)
                     start_command.c_str());
         }
         setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
-        setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
+        setuid(run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
         chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
 
         vector<string> elist;
