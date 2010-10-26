@@ -63,8 +63,10 @@ string daemon::sock_file()
 
 static void mkdirs(string path, mode_t mode, int uid=-1, int gid=-1)
 {
-    mkdir(path.c_str(), mode);
-    chown(path.c_str(), uid, gid);
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0)
+        mkdir(path.c_str(), mode)    == -1 && throw_strerr("mkdir %s failed", path.c_str());
+    chown(path.c_str(), uid, gid)    == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", path.c_str(), uid, gid);
 }
 
 void daemon::create_sock_dir()
