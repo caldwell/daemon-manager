@@ -6,6 +6,7 @@
 #include "passwd.h"
 #include "strprintf.h"
 #include "log.h"
+#include "posix-util.h"
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -61,14 +62,6 @@ string daemon::sock_file()
     return "/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + id + ".socket";
 }
 
-static void mkdirs(string path, mode_t mode, int uid=-1, int gid=-1)
-{
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0)
-        mkdir(path.c_str(), mode)    == -1 && throw_strerr("mkdir %s failed", path.c_str());
-    chown(path.c_str(), uid, gid)    == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", path.c_str(), uid, gid);
-}
-
 void daemon::start(bool respawn)
 {
     log(LOG_INFO, "Starting %s\n", id.c_str());
@@ -103,12 +96,12 @@ void daemon::start(bool respawn)
     try {
         close(fd[0]);
         if (want_sockfile) {
-            mkdirs("/var/run/daemon-manager/", 0755);
-            mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
-            mkdirs("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
+            mkdir_ug("/var/run/daemon-manager/", 0755);
+            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
+            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
         }
         if (log_output) {
-            mkdirs(user->log_dir().c_str(), 0770, user->uid, user->gid);
+            mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
             string logfile=user->log_dir() + name + ".log";
