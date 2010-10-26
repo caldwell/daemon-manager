@@ -108,6 +108,17 @@ void daemon::start(bool respawn)
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) ==  1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2)                                                  == -1 && throw_strerr("Couldn't dup stdout to stderr");
             chown(logfile.c_str(), user->uid, user->gid)               == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", logfile.c_str(), user->uid, user->gid);
+            time_t t = time(NULL);
+            const char *dashes="----------------------------------------------------------------------------------------------------";
+            int dash_length = (int)id.size() + 24+9+2+2+4;
+            fprintf(stderr,
+                    "\n+%.*s+\n"
+                    "| %.24s Starting \"%s\"... |\n"
+                    "+%.*s+\n"
+                    "> %s\n", dash_length, dashes,
+                    ctime(&t), id.c_str(),
+                    dash_length, dashes,
+                    start_command.c_str());
         }
         setgid(user->gid)          == -1 && throw_strerr("Couldn't set gid to %d\n", user->gid);
         setuid(run_as_uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", user->gid, user->name.c_str());
