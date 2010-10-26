@@ -38,7 +38,7 @@ void daemon::load_config()
     map<string,string> config = parse_daemon_config(config_file);
 
     working_dir = config.count("dir") ? config["dir"] : "/";
-    int uid = config.count("dir") ? uid_from_name(config["user"]) : user->uid;
+    int uid = config.count("user") ? uid_from_name(config["user"]) : user->uid;
     if (uid < 0) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
     if (!user->can_run_as_uid[uid]) throw_str("%s is not allowed to run as %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
     run_as_uid = uid;
