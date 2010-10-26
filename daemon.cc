@@ -98,7 +98,7 @@ void daemon::start(bool respawn)
         if (want_sockfile) {
             mkdir_ug("/var/run/daemon-manager/", 0755);
             mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/", 0755, run_as_uid);
-            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0775, run_as_uid, user->gid);
+            mkdir_ug("/var/run/daemon-manager/" + name_from_uid(run_as_uid) + "/" + user->name + "/", 0770, run_as_uid, user->gid);
         }
         if (log_output) {
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
