@@ -4,6 +4,7 @@
 //#include "except.h"
 #include "strprintf.h"
 #include "permissions.h"
+#include "posix-util.h"
 #include <string>
 #include <sstream>
 #include <string.h>
@@ -45,16 +46,9 @@ void user::init(struct passwd *p)
 
 void user::create_dirs()
 {
-    struct stat st;
-    if (stat(socket_dir().c_str(), &st) != 0) {
-        mkdir(socket_dir().c_str(), 0750);
-        chown(socket_dir().c_str(), uid, gid);
-    }
-    if (uid != 0 && // Don't create /etc/daemon-manager. Package manager should do that.
-        stat(config_path().c_str(), &st) != 0) {
-        mkdir(config_path().c_str(), 0750);
-        chown(config_path().c_str(), uid, gid);
-    }
+    mkdir_ug(socket_dir().c_str(), 0750, uid, gid);
+    if (uid != 0) // Don't create /etc/daemon-manager. Package manager should do that.
+        mkdir_ug(config_path().c_str(), 0750, uid, gid);
 }
 
 struct sockaddr_un user::sock_addr()

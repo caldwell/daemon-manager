@@ -10,7 +10,7 @@ dmctl daemon-manager: CXXFLAGS += -MMD -g -Wall -Wextra -Wno-parentheses
 dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\"
 dmctl daemon-manager: LDFLAGS  += -g
 
-dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o
+dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o posix-util.o
 
 -include *.d
 
