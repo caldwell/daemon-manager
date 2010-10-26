@@ -35,6 +35,7 @@ static void usage(char *me, int exit_code)
 }
 
 static void daemonize();
+static void create_pidfile(string pidfile);
 static vector<user*> user_list_from_config(struct master_config config);
 static vector<class daemon*>empty_daemon_list(0);
 static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class daemon*>existing = empty_daemon_list);
@@ -50,11 +51,13 @@ int main(int argc, char **argv)
     int verbose = 0;
     bool foreground = false;
     bool debug = false;
+    string pidfile;
 
     options o(argc, argv);
     if (o.get("help",       'h'))               { usage(argv[0], EXIT_SUCCESS); }
     if (o.get("config",     'c', arg_required)) { config_path = string(o.arg); }
     if (o.get("verbose",    'v'))               { verbose = o.argm.size(); }
+    if (o.get("pidfile",    'p', arg_required)) { pidfile = o.arg; }
     if (o.get("foreground", 'f'))               { foreground = true; }
     if (o.get("debug",      'd'))               { debug = foreground = true; }
     if (o.get("version"))                       { printf("daemon-manager version " VERSION "\n"); exit(EXIT_SUCCESS); }
@@ -75,6 +78,9 @@ int main(int argc, char **argv)
 
     if (!foreground)
         daemonize();
+
+    if (pidfile != "")
+        create_pidfile(pidfile);
 
     vector<user*> users = user_list_from_config(config);
 
@@ -111,6 +117,20 @@ static void daemonize()
     open("/dev/null", O_RDONLY);
     open("/dev/null", O_WRONLY);
     open("/dev/null", O_WRONLY);
+}
+
+static string pidfile;
+static void unlink_pidfile() {
+    unlink(pidfile.c_str());
+}
+static void create_pidfile(string _pidfile)
+{
+    pidfile = _pidfile;
+    FILE *p = fopen(pidfile.c_str(), "w");
+    if (!p) { log(LOG_ERR, "Couldn't open pid file \"%s\": %s\n", pidfile.c_str(), strerror(errno)); exit(1); }
+    fprintf(p, "%d\n", getpid());
+    fclose(p);
+    atexit(unlink_pidfile);
 }
 
 template<class T>
