@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <libgen.h>
+#include <grp.h>
 
 using namespace std;
 
@@ -121,6 +122,8 @@ void daemon::start(bool respawn)
                     dash_length, dashes,
                     start_command.c_str());
         }
+        initgroups(run_as.name.c_str(), run_as.gid)
+                                   == -1 && throw_strerr("Couldn't init groups for %s", run_as.name.c_str());
         setgid(run_as.gid)         == -1 && throw_strerr("Couldn't set gid to %d\n", run_as.gid);
         setuid(run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", run_as.uid, user->name.c_str());
         chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
