@@ -52,3 +52,16 @@ install: all
 
 	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
 	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
+
+# Release stuff (only useful to the maintainer for making releases)
+release: daemon-manager-$(VERSION).tar.gz
+
+daemon-manager-$(VERSION).tar.gz: daemon-manager-$(VERSION)
+	tar cf $@ $<
+
+daemon-manager-$(VERSION):
+	rm -rf $@
+	git clone . $@
+	cd $@ && git checkout $(VERSION)
+	rm -rf $@/.git
+	make -C $@ man
