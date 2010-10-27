@@ -3,7 +3,7 @@ VERSION=0.7
 EXE=daemon-manager dmctl
 all: $(EXE)
 
-daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.cc passwd.o daemon.o log.o options.o posix-util.o
+daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o
 
 dmctl daemon-manager: CC=g++
 dmctl daemon-manager: CXXFLAGS += -MMD -g -Wall -Wextra -Wno-parentheses
