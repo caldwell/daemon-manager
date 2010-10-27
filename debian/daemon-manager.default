@@ -1,0 +1,12 @@
+# Defaults for daemon-manager initscript
+# sourced by /etc/init.d/daemon-manager
+# installed at /etc/default/daemon-manager by the maintainer scripts
+
+#
+# This is a POSIX shell fragment
+#
+
+# Additional options that are passed to the Daemon.
+# Add -v once or twice for a little or a lot of extra logging
+
+DAEMON_OPTS=""

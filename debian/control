@@ -1,0 +1,28 @@
+Source: daemon-manager
+Section: unknown
+Priority: extra
+Maintainer: David Caldwell <david@porkrind.org>
+Build-Depends: debhelper (>= 7.0.50~)
+Standards-Version: 3.8.4
+Homepage: <insert the upstream URL, if relevant>
+Vcs-Git: git://github.com/caldwell/daemon-manager.git
+Vcs-Browser: http://github.com/caldwell/daemon-manager
+
+Package: daemon-manager
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Allow non-root users to start and stop their own daemons.
+ Daemon Manager allows non-root users to start and stop their own
+ daemons. It is perfect for running FastCGI servers, torrent servers, or any
+ other daemon that isn’t meant to run in the root context.
+ .
+ Daemon Manager will monitor processes and restart a daemon if it exits or
+ crashes.
+ .
+ Daemon Manager allows the system administrator to decide which users can
+ launch daemons and what users they are allowed to launch daemons as. For
+ instance, it is common to launch FastCGI servers as a different user
+ ("www-data" on Debian or Ubuntu, "apache" on Fedora).
+ .
+ Users are only allowed to see and control daemons which they have been
+ given access to by the system administrator.
