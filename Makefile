@@ -1,7 +1,8 @@
 VERSION=0.7
 
-EXE=daemon-manager dmctl
-all: $(EXE)
+SBIN=daemon-manager
+BIN=dmctl
+all: $(SBIN) $(BIN)
 
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o
 
@@ -15,10 +16,13 @@ dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o posix-util.o
 -include *.d
 
 clean:
-	rm -f *.o *.d $(EXE) $(MAN)
+	rm -f *.o *.d $(SBIN) $(BIN) $(MAN1) $(MAN5)
 
-MAN=dmctl.1 daemon-manager.1 daemon.conf.5 daemon-manager.conf.5
-all: $(MAN)
+MAN1=dmctl.1 daemon-manager.1
+MAN5=daemon.conf.5 daemon-manager.conf.5
+
+man: $(MAN1) $(MAN5)
+all: man
 
 PODFLAGS=--release=daemon-manager-$(VERSION) --center="Daemon Manager Documentation"
 
@@ -27,3 +31,24 @@ PODFLAGS=--release=daemon-manager-$(VERSION) --center="Daemon Manager Documentat
 
 %.5 : %.pod
 	pod2man $(PODFLAGS) $< $@
+
+# Install stuff
+DESTDIR    =
+PREFIX     = /usr/local
+ifeq ($(PREFIX),/usr)
+	ETC_DIR  = /etc
+else
+	ETC_DIR  = $(PREFIX)/etc
+endif
+SBIN_DIR = $(PREFIX)/sbin
+BIN_DIR  = $(PREFIX)/bin
+MAN_DIR  = $(PREFIX)/share/man
+
+install: all
+	cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
+	cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
+	cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
+	cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
+
+	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
+	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
