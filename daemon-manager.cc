@@ -23,6 +23,7 @@
 #include "log.h"
 #include "uniq.h"
 #include "options.h"
+#include "foreach.h"
 
 using namespace std;
 
@@ -153,39 +154,39 @@ static vector<user*> user_list_from_config(struct master_config config)
     map<string,user*> users;
     vector<user*> user_list;
 
-    for (vector<string>::iterator u = unique_users.begin(); u != unique_users.end(); u++) {
+    foreach(string u, unique_users) {
         try {
-            user_list.push_back(users[*u] = new user(*u));
-            users[*u]->create_dirs();
-            users[*u]->open_server_socket();
+            user_list.push_back(users[u] = new user(u));
+            users[u]->create_dirs();
+            users[u]->open_server_socket();
         } catch (std::exception &e) {
-            log(LOG_WARNING, "Ignoring %s: %s\n", u->c_str(), e.what());
+            log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
         }
     }
 
-    for (vector<user*>::iterator u = user_list.begin(); u != user_list.end(); u++) {
-        (*u)->can_run_as_uid[(*u)->uid] = true; // You can always run as yourself, however ill-advised.
-        if (config.runs_as.find((*u)->name) != config.runs_as.end()) {
-            for (config_list_it name = config.runs_as[(*u)->name].begin(); name != config.runs_as[(*u)->name].end(); name++) {
+    foreach(user *u, user_list) {
+        u->can_run_as_uid[u->uid] = true; // You can always run as yourself, however ill-advised.
+        if (config.runs_as.find(u->name) != config.runs_as.end()) {
+            for (config_list_it name = config.runs_as[u->name].begin(); name != config.runs_as[u->name].end(); name++) {
                 uid_t uid = uid_from_name(*name);
                 if (uid == (uid_t)-1)
-                    log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
+                    log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
                 else
-                    (*u)->can_run_as_uid[uid] = true;
+                    u->can_run_as_uid[uid] = true;
             }
         }
-        if (config.manages.find((*u)->name) != config.manages.end() || (*u)->uid == 0) {
-            vector<string> *manage_list = (*u)->uid == 0 ? &unique_users // Root can manage all users.
-                                                         : &config.manages[(*u)->name];
+        if (config.manages.find(u->name) != config.manages.end() || u->uid == 0) {
+            vector<string> *manage_list = u->uid == 0 ? &unique_users // Root can manage all users.
+                                                      : &config.manages[u->name];
             for (config_list_it name = manage_list->begin(); name != manage_list->end(); name++) {
                 if (!users[*name])
-                    log(LOG_ERR, "%s can't manage non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
+                    log(LOG_ERR, "%s can't manage non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
                 else
-                    (*u)->manages.push_back(users[*name]);
+                    u->manages.push_back(users[*name]);
             }
         }
-        if (!contains((*u)->manages, *u)) // We can always manage ourselves.
-            (*u)->manages.push_back(*u);
+        if (!contains(u->manages, u)) // We can always manage ourselves.
+            u->manages.push_back(u);
     }
     return user_list;
 }
@@ -194,26 +195,24 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
 {
     sort(existing.begin(), existing.end(), daemon_compare);
     vector<class daemon*> daemons;
-    // Now load up all the daemon config files for each user.
-    for (vector<user*>::iterator u = user_list.begin(); u != user_list.end(); u++) {
+    foreach(class user *u, user_list) {
         try {
-            vector<string> confs = (*u)->config_files();
-            for (vector<string>::iterator conf = confs.begin(); conf != confs.end(); conf++) {
+            foreach(string conf, u->config_files()) {
                 try {
-                    class daemon *d = new class daemon(*conf, *u);
+                    class daemon *d = new class daemon(conf, u);
                     if (!binary_search(existing.begin(), existing.end(), d, daemon_compare)) {
                         daemons.push_back(d);
-                        log(LOG_INFO, "Loaded daemon %s for %s\n", conf->c_str(), (*u)->name.c_str());
+                        log(LOG_INFO, "Loaded daemon %s for %s\n", conf.c_str(), u->name.c_str());
                     } else {
                         log(LOG_DEBUG, "Skipping daemon %s we've already seen\n", d->id.c_str());
                         delete d;
                     }
                 } catch(std::exception &e) {
-                    log(LOG_ERR, "Skipping %s's config file %s: %s\n", (*u)->name.c_str(), conf->c_str(), e.what());
+                    log(LOG_ERR, "Skipping %s's config file %s: %s\n", u->name.c_str(), conf.c_str(), e.what());
                 }
             }
         } catch (std::exception &e) {
-            log(LOG_ERR, "Skipping %s's config files: %s\n", (*u)->name.c_str(), e.what());
+            log(LOG_ERR, "Skipping %s's config files: %s\n", u->name.c_str(), e.what());
         }
     }
     return daemons;
@@ -222,10 +221,10 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
 static void autostart(vector<class daemon*> daemons)
 {
     // Now start all the daemons marked "autostart"
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        if ((*d)->autostart)
-            try { (*d)->start(); }
-            catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.what()); }
+    foreach(class daemon *d, daemons)
+        if (d->autostart)
+            try { d->start(); }
+            catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", d->id.c_str(), e.what()); }
 }
 
 static void distribute_signal_to_children(int sig)
@@ -251,8 +250,8 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
     map<int,user*> listeners;
     map<int,user*> clients;
 
-    for (vector<class user*>::iterator u = users.begin(); u != users.end(); u++)
-        listeners[(*u)->command_socket] = *u;
+    foreach(class user *u, users)
+        listeners[u->command_socket] = u;
 
     while (1) {
         struct pollfd fd[listeners.size() + clients.size()];
@@ -268,10 +267,10 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         }
 
         time_t wait_time=-1; // infinite
-        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-            if ((*d)->state == coolingdown)
-                wait_time = wait_time < 0 ? (*d)->cooldown_remaining() * 1000
-                                          : min(wait_time, (*d)->cooldown_remaining() * 1000);
+        foreach(class daemon *d, daemons)
+            if (d->state == coolingdown)
+                wait_time = wait_time < 0 ? d->cooldown_remaining() * 1000
+                                          : min(wait_time, d->cooldown_remaining() * 1000);
 
         int got = poll(fd, nfds, wait_time);
 
@@ -322,22 +321,22 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         // Reap/respawn our children
         for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
             log(LOG_NOTICE, "Child %d exited\n", kid);
-            for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-                if ((*d)->pid == kid) {
-                    if ((*d)->state == running)
-                        try { (*d)->respawn(); }
-                        catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
+            foreach(class daemon *d, daemons)
+                if (d->pid == kid) {
+                    if (d->state == running)
+                        try { d->respawn(); }
+                        catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
                     else
-                        (*d)->reap();
+                        d->reap();
                     break;
                 }
         }
         // Start up daemons that have cooled down
-        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-            if ((*d)->state == coolingdown && (*d)->cooldown_remaining() == 0) {
-                log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id.c_str());
-                try { (*d)->start(true); }
-                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
+        foreach(class daemon *d, daemons)
+            if (d->state == coolingdown && d->cooldown_remaining() == 0) {
+                log(LOG_INFO, "Cooldown time has arrived for %s\n", d->id.c_str());
+                try { d->start(true); }
+                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
             }
     }
 }
@@ -345,10 +344,10 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons)
 {
     vector<class daemon*> manageable;
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        for (vector<class user*>::iterator u = user->manages.begin(); u != user->manages.end(); u++)
-            if ((*d)->user == *u) {
-                manageable.push_back(*d);
+    foreach(class daemon *d, daemons)
+        foreach(class user *u, user->manages)
+            if (d->user == u) {
+                manageable.push_back(d);
                 break;
             }
     return manageable;
@@ -357,8 +356,8 @@ static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*
 static string daemon_id_list(vector<class daemon*> daemons)
 {
     string resp = "";
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        resp += (resp.length() ? "," : "") + (*d)->id;
+    foreach(class daemon *d, daemons)
+        resp += (resp.length() ? "," : "") + d->id;
     return resp;
 }
 
@@ -382,16 +381,16 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
 
     if (cmd == "status") {
         string resp = strprintf("%-30s %-15s %6s %8s %8s %6s %6s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
-        for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-          if (arg.empty() || arg == (*d)->id)
+        foreach(class daemon *d, manageable)
+          if (arg.empty() || arg == d->id)
             resp += strprintf("%-30s %-15s %6d %8zd %8d %6ld %6ld\n",
-                              (*d)->id.c_str(),
-                              (*d)->state_str().c_str(),
-                              (*d)->pid,
-                              (*d)->respawns,
-                              (int)(*d)->cooldown_remaining(),
-                              (*d)->pid ? time(NULL) - (*d)->respawn_time : 0,
-                              (*d)->pid ? time(NULL) - (*d)->start_time   : 0);
+                              d->id.c_str(),
+                              d->state_str().c_str(),
+                              d->pid,
+                              d->respawns,
+                              (int)d->cooldown_remaining(),
+                              d->pid ? time(NULL) - d->respawn_time : 0,
+                              d->pid ? time(NULL) - d->start_time   : 0);
         return "OK: " + resp;
     }
 
