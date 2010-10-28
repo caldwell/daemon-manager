@@ -244,6 +244,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
     signal(SIGCHLD, handle_sig_child);
     signal(SIGTERM, distribute_signal_to_children);
     signal(SIGINT,  distribute_signal_to_children);
+    signal(SIGPIPE, SIG_IGN);
     typedef map<int,user*> fd_map;
     typedef map<int,user*>::iterator fd_map_it;
 
