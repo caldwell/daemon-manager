@@ -21,9 +21,9 @@
 using namespace std;
 
 daemon::daemon(string config_file, class user *user)
-        : config_file(config_file), config_file_stamp(-1), pid(0), user(user), state(stopped),
-          cooldown(0), cooldown_start(0), respawns(0), start_time(0), respawn_time(0)
+        : config_file(config_file), config_file_stamp(-1), user(user)
 {
+    current = (struct current) { 0,stopped,0,0,0,0,0 };
     const char *stem = basename((char*)config_file.c_str());
     const char *ext = strstr(stem, ".conf");
     name = string(stem, ext ? ext - stem : strlen(stem));
@@ -37,18 +37,18 @@ void daemon::load_config()
     struct stat st = permissions::check(config_file, 0113, user->uid);
     if (st.st_mtime == config_file_stamp) return;
 
-    map<string,string> config = parse_daemon_config(config_file);
+    map<string,string> cfg = parse_daemon_config(config_file);
 
-    working_dir = config.count("dir") ? config["dir"] : "/";
-    pwent pw = pwent(config.count("user") ? config["user"] : user->name);
-    if (!pw.valid) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), config["user"].c_str(), config_file.c_str());
-    if (!user->can_run_as_uid.count(pw.uid)) throw_str("%s is not allowed to run as %s[%u] in %s\n", user->name.c_str(), config["user"].c_str(), pw.uid, config_file.c_str());
-    run_as = pw;
-    if (!config.count("start")) throw_str("Missing \"start\" in %s\n", config_file.c_str());
-    start_command = config["start"];
-    autostart = !config.count("autostart") || strchr("YyTt1Oo", config["autostart"].c_str()[0]);
-    log_output = config.count("output") && config["output"] == "log";
-    want_sockfile = config.count("sockfile") && strchr("YyTt1Oo", config["sockfile"].c_str()[0]);
+    config.working_dir = cfg.count("dir") ? cfg["dir"] : "/";
+    pwent pw = pwent(cfg.count("user") ? cfg["user"] : user->name);
+    if (!pw.valid) throw_str("%s is not allowed to run as unknown user %s in %s\n", user->name.c_str(), cfg["user"].c_str(), config_file.c_str());
+    if (!user->can_run_as_uid.count(pw.uid)) throw_str("%s is not allowed to run as %s[%u] in %s\n", user->name.c_str(), cfg["user"].c_str(), pw.uid, config_file.c_str());
+    config.run_as = pw;
+    if (!cfg.count("start")) throw_str("Missing \"start\" in %s\n", config_file.c_str());
+    config.start_command = cfg["start"];
+    config.autostart = !cfg.count("autostart") || strchr("YyTt1Oo", cfg["autostart"].c_str()[0]);
+    config.log_output = cfg.count("output") && cfg["output"] == "log";
+    config.want_sockfile = cfg.count("sockfile") && strchr("YyTt1Oo", cfg["sockfile"].c_str()[0]);
 
     config_file_stamp = st.st_mtime;
 }
@@ -61,7 +61,7 @@ bool daemon::exists()
 
 string daemon::sock_file()
 {
-    return "/var/run/daemon-manager/" + run_as.name + "/" + id + ".socket";
+    return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
 }
 
 void daemon::start(bool respawn)
@@ -83,26 +83,26 @@ void daemon::start(bool respawn)
         close(fd[0]);
         if(red > 0)
             throw runtime_error(string(err));
-        pid = child; // Parent
-        log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), pid);
-        respawn_time = time(NULL);
+        current.pid = child; // Parent
+        log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
+        current.respawn_time = time(NULL);
         if (respawn)
-            respawns++;
+            current.respawns++;
         else
-            start_time = time(NULL);
-        state = running;
+            current.start_time = time(NULL);
+        current.state = running;
         return;
     }
 
     // Child
     try {
         close(fd[0]);
-        if (want_sockfile) {
+        if (config.want_sockfile) {
             mkdir_ug("/var/run/daemon-manager/", 0755);
-            mkdir_ug("/var/run/daemon-manager/" + run_as.name + "/", 0755, run_as.uid);
-            mkdir_ug("/var/run/daemon-manager/" + run_as.name + "/" + user->name + "/", 0770, run_as.uid, user->gid);
+            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/", 0755, config.run_as.uid);
+            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/" + user->name + "/", 0770, config.run_as.uid, user->gid);
         }
-        if (log_output) {
+        if (config.log_output) {
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
@@ -120,26 +120,26 @@ void daemon::start(bool respawn)
                     "> %s\n", dash_length, dashes,
                     ctime(&t), id.c_str(),
                     dash_length, dashes,
-                    start_command.c_str());
+                    config.start_command.c_str());
         }
-        initgroups(run_as.name.c_str(), run_as.gid)
-                                   == -1 && throw_strerr("Couldn't init groups for %s", run_as.name.c_str());
-        setgid(run_as.gid)         == -1 && throw_strerr("Couldn't set gid to %d\n", run_as.gid);
-        setuid(run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", run_as.uid, user->name.c_str());
-        chdir(working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", working_dir.c_str());
+        initgroups(config.run_as.name.c_str(), config.run_as.gid)
+                                          == -1 && throw_strerr("Couldn't init groups for %s", config.run_as.name.c_str());
+        setgid(config.run_as.gid)         == -1 && throw_strerr("Couldn't set gid to %d\n", config.run_as.gid);
+        setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
+        chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
         vector<string> elist;
         elist.push_back("HOME=" + user->homedir);
         elist.push_back("LOGNAME=" + user->name);
         elist.push_back("SHELL=/bin/sh");
         elist.push_back("PATH=/usr/bin:/bin");
-        if (want_sockfile)
+        if (config.want_sockfile)
             elist.push_back("SOCK_FILE=" + sock_file());
         const char *env[elist.size()+1];
         for (size_t i=0; i<elist.size(); i++)
             env[i] = elist[i].c_str();
         env[elist.size()] = NULL;
-        execle("/bin/sh", "/bin/sh", "-c", start_command.c_str(), (char*)NULL, env);
+        execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
         write(fd[1], e.what(), strlen(e.what())+1/*NULL*/);
@@ -150,12 +150,12 @@ void daemon::start(bool respawn)
 
 void daemon::stop()
 {
-    if (pid) {
-        log(LOG_INFO, "Stopping [%d] %s\n", pid, id.c_str());
-        kill(pid, SIGTERM);
-        state = stopping;
+    if (current.pid) {
+        log(LOG_INFO, "Stopping [%d] %s\n", current.pid, id.c_str());
+        kill(current.pid, SIGTERM);
+        current.state = stopping;
     }
-    respawns = 0;
+    current.respawns = 0;
 }
 
 
@@ -163,26 +163,26 @@ void daemon::respawn()
 {
     reap();
     time_t now = time(NULL);
-    time_t uptime = now - respawn_time;
-    if (uptime < 60) cooldown = min((time_t)60, cooldown + 10); // back off if it's dying too often
-    if (uptime > 60) cooldown = 0; // Clear cooldown on good behavior
-    if (cooldown) {
-        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id.c_str(), (int)cooldown);
-        cooldown_start = now;
-        state = coolingdown;
+    time_t uptime = now - current.respawn_time;
+    if (uptime < 60) current.cooldown = min((time_t)60, current.cooldown + 10); // back off if it's dying too often
+    if (uptime > 60) current.cooldown = 0; // Clear cooldown on good behavior
+    if (current.cooldown) {
+        log(LOG_NOTICE, "%s is respawning too quickly, backing off. Cooldown time is %d seconds\n", id.c_str(), (int)current.cooldown);
+        current.cooldown_start = now;
+        current.state = coolingdown;
     } else
         start(true);
 }
 
 void daemon::reap()
 {
-    pid = 0;
-    state = stopped;
+    current.pid = 0;
+    current.state = stopped;
 }
 
 time_t daemon::cooldown_remaining()
 {
-    return max((time_t)0, cooldown - (time(NULL) - cooldown_start));
+    return max((time_t)0, current.cooldown - (time(NULL) - current.cooldown_start));
 }
 
 bool daemon_compare(class daemon *a, class daemon *b)

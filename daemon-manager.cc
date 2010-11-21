@@ -222,7 +222,7 @@ static void autostart(vector<class daemon*> daemons)
 {
     // Now start all the daemons marked "autostart"
     foreach(class daemon *d, daemons)
-        if (d->autostart)
+        if (d->config.autostart)
             try { d->start(); }
             catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", d->id.c_str(), e.what()); }
 }
@@ -269,7 +269,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 
         time_t wait_time=-1; // infinite
         foreach(class daemon *d, daemons)
-            if (d->state == coolingdown)
+            if (d->current.state == coolingdown)
                 wait_time = wait_time < 0 ? d->cooldown_remaining() * 1000
                                           : min(wait_time, d->cooldown_remaining() * 1000);
 
@@ -277,7 +277,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 
         // Cull daemons whose config files have been deleted
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end();)
-            if (((*d)->state == stopped || (*d)->state == coolingdown) && !(*d)->exists()) {
+            if (((*d)->current.state == stopped || (*d)->current.state == coolingdown) && !(*d)->exists()) {
                 log(LOG_INFO, "Culling %s because %s has disappeared.\n", (*d)->id.c_str(), (*d)->config_file.c_str());
                 delete *d;
                 d = daemons.erase(d);
@@ -323,8 +323,8 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
             log(LOG_NOTICE, "Child %d exited\n", kid);
             foreach(class daemon *d, daemons)
-                if (d->pid == kid) {
-                    if (d->state == running)
+                if (d->current.pid == kid) {
+                    if (d->current.state == running)
                         try { d->respawn(); }
                         catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
                     else
@@ -334,7 +334,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         }
         // Start up daemons that have cooled down
         foreach(class daemon *d, daemons)
-            if (d->state == coolingdown && d->cooldown_remaining() == 0) {
+            if (d->current.state == coolingdown && d->cooldown_remaining() == 0) {
                 log(LOG_INFO, "Cooldown time has arrived for %s\n", d->id.c_str());
                 try { d->start(true); }
                 catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
@@ -387,11 +387,11 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
             resp += strprintf("%-30s %-15s %6d %8zd %8d %6ld %6ld\n",
                               d->id.c_str(),
                               d->state_str().c_str(),
-                              d->pid,
-                              d->respawns,
+                              d->current.pid,
+                              d->current.respawns,
                               (int)d->cooldown_remaining(),
-                              d->pid ? time(NULL) - d->respawn_time : 0,
-                              d->pid ? time(NULL) - d->start_time   : 0);
+                              d->current.pid ? time(NULL) - d->current.respawn_time : 0,
+                              d->current.pid ? time(NULL) - d->current.start_time   : 0);
         return "OK: " + resp;
     }
 
@@ -408,7 +408,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
     class daemon *daemon = *d;
 
-    if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
+    if      (cmd == "start")   if (daemon->current.pid) throw_str("Already running \"%s\"", daemon->id.c_str());
                                else daemon->start();
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
