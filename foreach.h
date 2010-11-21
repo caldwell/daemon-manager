@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2010 David Caldwell,  All Rights Reserved. -*- c++ -*-
 #ifndef __FOREACH_H__
 #define __FOREACH_H__
 
