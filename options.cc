@@ -20,10 +20,11 @@ class option_match {
 
 options::options(int c, char **v)
 {
+    *v++; c--;
     end = -1;
-    for (int i=1; i<c; i++)
+    for (int i=0; i<c; i++)
         if (string(v[i]) == "--" && end == (size_t) -1)
-            end = i-1;
+            end = i;
         else
             args.push_back(v[i]);
     if (end == (size_t) -1)
