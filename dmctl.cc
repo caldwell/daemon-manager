@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     try {
         me->open_client_socket();
     } catch (std::exception &e) {
-        errx(1, "daemon-manager does not appear to be running.");
+        errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
     }
 
     string command = o.args[0];
