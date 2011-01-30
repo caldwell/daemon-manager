@@ -104,9 +104,9 @@ static string canonify(string id, user *u)
     vector<string> ids;
     split(ids, id_list, ",");
     for (vector<string>::iterator i=ids.begin(); i != ids.end(); i++) {
-        size_t start;
-        if ((start = i->find(id)) != i->npos &&
-            start > 0 && (*i)[start-1] == '/')
+        vector<string> components;
+        split(components, *i, "/");
+        if (components.size() == 2 && components[1].find(id) == 0)
             candidates.push_back(*i);
     }
 
