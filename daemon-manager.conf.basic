@@ -1,0 +1,22 @@
+# See daemon-manager.conf(5) for details on the format of this file.
+
+[runs_as]
+# List all the users you want to be able to launch daemons in a list here
+# followed by an optional comma separated list of users they are allowed to
+# start their daemons as.
+#
+# Example 1--David is allowed to launch daemons as himself:
+# david
+# Example 2--Tim is allowed to launch daemons as himself and as www-data:
+# tim: www-data
+# Example 3--Bob is allowed to launch daemons as himself and as www-data and also nobody::
+# bob: www-data, nobody
+
+
+[manages]
+# List user here who can manage other users.
+#
+# Example 1--David can manage bob
+# david: bob
+# Example 2--Bob can manage David and Tim:
+# bob: david, tim
