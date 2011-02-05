@@ -290,7 +290,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                 if (fd[i].revents & POLLIN) {
                     if (listeners.count(fd[i].fd)) {
                         struct sockaddr_un addr;
-                        socklen_t addr_len;
+                        socklen_t addr_len = sizeof(addr);
                         int client = accept(fd[i].fd, (struct sockaddr*) &addr, &addr_len);
                         if (client == -1) {
                             log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
