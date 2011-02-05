@@ -362,6 +362,21 @@ static string daemon_id_list(vector<class daemon*> daemons)
     return resp;
 }
 
+#include <list>
+#include "stringutil.h"
+static string elapsed(time_t seconds)
+{
+    std::list<string> s;
+                 s.push_front(strprintf("%lds", seconds % 60)); seconds /= 60;
+    if (seconds) s.push_front(strprintf("%ldm", seconds % 60)); seconds /= 60;
+    if (seconds) s.push_front(strprintf("%ldh", seconds % 24)); seconds /= 24;
+    if (seconds) s.push_front(strprintf("%ldd", seconds %  7)); seconds /=  7;
+    if (seconds) s.push_front(strprintf("%ldw", seconds     ));
+
+    s.resize(2);
+    return join(s, "");
+}
+
 static string do_command(string command_line, user *user, vector<class daemon*> *daemons)
 {
   try {
@@ -381,17 +396,17 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     }
 
     if (cmd == "status") {
-        string resp = strprintf("%-30s %-15s %6s %8s %8s %6s %6s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
+        string resp = strprintf("%-30s %-15s %6s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
         foreach(class daemon *d, manageable)
           if (arg.empty() || arg == d->id)
-            resp += strprintf("%-30s %-15s %6d %8zd %8d %6ld %6ld\n",
+            resp += strprintf("%-30s %-15s %6d %8zd %8s %8s %8s\n",
                               d->id.c_str(),
                               d->state_str().c_str(),
                               d->current.pid,
                               d->current.respawns,
-                              (int)d->cooldown_remaining(),
-                              d->current.pid ? time(NULL) - d->current.respawn_time : 0,
-                              d->current.pid ? time(NULL) - d->current.start_time   : 0);
+                              elapsed(d->cooldown_remaining()).c_str(),
+                              elapsed(d->current.pid ? time(NULL) - d->current.respawn_time : 0).c_str(),
+                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str());
         return "OK: " + resp;
     }
 
