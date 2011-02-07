@@ -3,12 +3,6 @@
 #define __FOREACH_H__
 
 #include <stdlib.h>
-template<class T> class bool_container {
-  public:
-    bool_container(T item) : item(item) {}
-    mutable T item;
-    operator bool() const { return false; }
-};
 
 template<class T> typename T::const_iterator __begin(T &x)       { return x.begin(); }
 template<class T> typename T::const_iterator __end(T &x, size_t) { return x.end(); }
@@ -17,12 +11,12 @@ template<class T> T *__begin(T x[])           { return &x[0]; }
 template<class T> T *__end(T x[], size_t len) { return &x[len/sizeof(*x)]; }
 
 #define foreach(var, container)                                         \
-    if (bool __once_1 = true)                                           \
-    for (const typeof(container)& __c = (container); __once_1; __once_1 = false) \
-    if (bool_container<typeof(__begin(__c))> __b = __begin(__c)) {}  else \
-    if (bool_container<typeof(__end(__c,0))> __e = __end(__c, sizeof(__c)))   {}  else \
-    if (bool __break = false) {} else                                   \
-    for (typeof(__begin(__c)) _var_it = __b.item; !__break && _var_it != __e.item; _var_it++) \
+    if (bool __init = true)                                             \
+    for (const typeof(container)& __c = (container); __init;)           \
+    for (typeof(__begin(__c)) __b = __begin(__c); __init; )             \
+    for (typeof(__end(__c,0)) __e = __end(__c, sizeof(__c)); __init;)   \
+    if (bool __break = __init = false) {} else                          \
+    for (typeof(__begin(__c)) _var_it = __b; !__break && _var_it != __e; _var_it++) \
         if (bool __once = false) {} else                                \
         if (!(__break = true)) {} else                                  \
         for (var = *_var_it; !__once; __once = true, __break=false)
