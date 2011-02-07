@@ -34,5 +34,13 @@ void split(Container &list, string s, string separator)
     }
 }
 
+template<typename Container>
+string join(Container list, string separator)
+{
+    string s;
+    for (typename Container::iterator i = list.begin(); i != list.end(); i++)
+        s += (i == list.begin() ? "" : separator) + *i;
+    return s;
+}
 #endif /* __STRINGUTIL_H__ */
 
