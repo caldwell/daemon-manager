@@ -1,4 +1,4 @@
-VERSION=0.8
+VERSION=0.9
 
 SBIN=daemon-manager
 BIN=dmctl
