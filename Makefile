@@ -24,13 +24,13 @@ MAN5=daemon.conf.5 daemon-manager.conf.5
 man: $(MAN1) $(MAN5)
 all: man
 
-PODFLAGS=--release=daemon-manager-$(VERSION) --center="Daemon Manager Documentation"
+ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation"
 
 %.1 : %.cc
-	pod2man $(PODFLAGS) $< $@
+	a2x $(ASCIIDOC_FLAGS) -f manpage $<
 
-%.5 : %.pod
-	pod2man $(PODFLAGS) $< $@
+%.5 : %.asciidoc
+	a2x $(ASCIIDOC_FLAGS) -f manpage $<
 
 # Install stuff
 DESTDIR    =

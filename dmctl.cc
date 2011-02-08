@@ -1,4 +1,5 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+////
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,112 +123,108 @@ static string canonify(string id, user *u)
     exit(EXIT_FAILURE);
 }
 
-/*
+/* Magic quoting to transition to asciidoc mode
+////
 
-=head1 NAME
+dmctl(1)
+========
+David Caldwell <david@porkrind.org>
 
+NAME
+----
 dmctl - Daemon Manager control
 
-=head1 SYNOPSIS
-
+SYNOPSIS
+--------
   dmctl list|rescan
   dmctl status [<daemon-id>]
   dmctl start|stop|restart <daemon-id>
 
-=head1 DESCRIPTION
-
-B<dmctl> allows the user to communicate and interact with the
+DESCRIPTION
+-----------
+*dmctl* allows the user to communicate and interact with the
 L<daemon-manager(1)> daemon.
 
-=head1 COMMANDS
+COMMANDS
+--------
+*list*::
 
-=over
+  This command will list all the daemon ids that the user is allowed to control.
 
-=item I<list>
+*status ['<daemon-id>']*::
 
-This command will list all the daemon ids that the user is allowed to control.
+  This command will print a human readable list of the daemons-ids and their
+  current stats. If the optional parameter '<daemon-id>' is specified then only
+  the status for the daemon with that id will be shown.
+  +
+  The following pieces of data are shown per daemon:
 
-=item I<status> [I<daemon-id>]
+    'daemon-id';;
 
-This command will print a human readable list of the daemons-ids and their
-current stats. If the optional parameter I<daemon-id> is specified then only
-the status for the daemon with that id will be shown.
+      The daemon id.
 
-The following pieces of data are shown per daemon:
+    'state';;
 
-=over
+      One of "`stopped`", "`running`", "`stopping`", "`coolingdown`".
+      +
+      The cooling down state happens when the daemon starts respawning too quickly. In
+      order to prevent too much resource utilization, 'daemon-manager(1)' will require
+      the daemon to cool off for some period of time before respawning it.
 
-=item I<daemon-id>
+    'pid';;
 
-The daemon id.
+      The process id of the running daemon, or zero if it is not running.
 
-=item I<state>
+    'respawns';;
 
-One of C<stopped>, C<running>, C<stopping>, C<coolingdown>.
+      The number of times the daemon has been respawned by daemon-manager(1) due to it
+      quitting unexpectadly.
 
-The cooling down state happens when the daemon starts respawning too quickly. In
-order to prevent too much resource utilization, daemon-manager(1) will require
-the daemon to cool off for some period of time before respawning it.
+    'cooldown';;
 
-=item I<pid>
+      The number of seconds left in the cooldown period.
 
-The process id of the running daemon, or zero if it is not running.
+    'uptime';;
 
-=item I<respawns>
+      The number of seconds the daemon has been running for since the last respawn.
 
-The number of times the daemon has been respawned by daemon-manager(1) due to it
-quitting unexpectadly.
+    'total';;
 
-=item I<cooldown>
+      The total number of seconds the daemon has been running for since the last
+      start.
 
-The number of seconds left in the cooldown period.
+*rescan*::
 
-=item I<uptime>
+  Upon receiving this command, 'daemon-manager(1)' will look through the user's
+  home directory (and the home directories of the other users managed by the user)
+  for new daemon config files. Any new files will be loaded (and started if their
+  'autostart' option is set).
+  +
+  It is not necessary to issue the 'rescan' command if a config file has been
+  edited or deleted. 'start' and 'stop' will catch those 2 cases respectively.
 
-The number of seconds the daemon has been running for since the last respawn.
+*start '<daemon-id>'*::
 
-=item I<total>
+  This will start the daemon identified by '<daemon-id>' if it hasn't already
+  been started.
+  +
+  If the daemon is cooling down then 'start' will attempt to start it
+  immediately. This is useful if you are debugging a daemon that is not launching
+  properly and don't want to wait for the cooldown period.
 
-The total number of seconds the daemon has been running for since the last
-start.
+*stop '<daemon-id>'*::
 
-=back
+  This will stop the daemon identified by '<daemon-id>' if it isn't already
+  stopped.
 
-=item I<rescan>
+*restart '<daemon-id>'*::
 
-Upon receiving this command, L<daemon-manager(1)> will look through the user's
-home directory (and the home directories of the other users managed by the user)
-for new daemon config files. Any new files will be loaded (and started if their
-I<autostart> option is set).
+  Currently this is just a short hand for a 'stop' command followed by a 'start'
+  command.
 
-It is not necessary to issue the I<rescan> command if a config file has been
-edited or deleted. I<start> and I<stop> will catch those 2 cases respectively.
 
-=item I<start> <daemon-id>
+SEE ALSO
+--------
+'daemon-manager(1)', 'daemon.conf(5)'
 
-This will start the daemon identified by I<< <daemon-id> >> if it hasn't already
-been started.
-
-If the daemon is cooling down then I<start> will attempt to start it
-immediately. This is useful if you are debugging a daemon that is not launching
-properly and don't want to wait for the cooldown period.
-
-=item I<stop> <daemon-id>
-
-This will stop the daemon identified by I<< <daemon-id> >> if it isn't already
-stopped.
-
-=item I<restart> <daemon-id>
-
-Currently this is just a short hand for a I<stop> command followed by a I<start>
-command.
-
-=back
-
-=head1 SEE ALSO
-
-L<daemon-manager(1)>, L<daemon.conf(5)>
-
-=cut
-
-*/
+//*/

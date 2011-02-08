@@ -1,0 +1,76 @@
+// -*- text -*-
+
+daemon-manager.conf(5)
+======================
+David Caldwell <david@porkrind.org>
+
+NAME
+----
+daemon-manager.conf - Master configuration file for Daemon Manager
+
+SYNOPSIS
+--------
+  # Example configuration file
+  [runs_as]
+  user1: www-data
+  # user2 is allowed to launch daemons but only as itself
+  user2
+  user3: nobody, www-data # Comments can go anywhere.
+
+  [manages]
+  user1 : user2, user3 # whitespace is generally ignored
+  user3: user1
+
+DESCRIPTION
+-----------
+This manual page describes the master config file for
+'daemon-manager(1)'. This file controls which users can launch daemons and
+what users the daemons can be run as when they are launched. The file is
+loaded from *'/etc/daemon-manager/daemon-manager.conf'*. It is required to be
+owned by root and cannot be world or group writable.
+
+FILE FORMAT
+-----------
+The config file is a plain text file. Comments are stripped from lines before
+they are parsed. A comment starts with a "#" and continues to the end of a
+line. Blank lines are ignored.
+
+The file consists of two sections designated by
+
+  [runs_as]
+
+and
+
+  [manages]
+
+The 'runs_as' section identifes which users are allowed to launch daemons. It
+looks like this:
+
+  bob: mary, bruce, rhonda
+
+That line means that 'bob' is allowed to start the demons in his home
+directory and have them run as 'bob', 'mary', 'bruce', or 'rhonda'.  Users
+are always allowed to launch daemons as themselves so there is no need to list
+them on the right hand side. If you only want to allow 'bob' to launch
+daemons as himself then just list him on his own line in the 'run_as'
+section:
+
+  bob
+
+A trailing `:' is also acceptable:
+
+  bob:
+
+The 'manages' section allows the system administrator to appoint users that
+can start and stop daemons on behalf of other users. It has the same syntax as
+the 'runs_as' section:
+
+  larry: bob, martha
+
+That line means that 'larry' can start, stop, restart, and inspect 'bob' or
+_martha_'s daemons. He will not be able to see or control _bruce_'s daemons,
+though.
+
+SEE ALSO
+--------
+'daemon-manager(1)', 'daemon-manager.conf(5)', 'dmctl(1)'

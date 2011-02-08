@@ -1,4 +1,5 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+////
 
 #include <stdio.h>
 #include <string.h>
@@ -457,108 +458,104 @@ static void dump_config(struct master_config config)
 }
 
 /*
+////
 
-=head1 NAME
+daemon-manager(1)
+=================
+David Caldwell <david@porkrind.org>
 
+NAME
+----
 daemon-manager - Allow users to setup and control daemons
 
-=head1 SYNOPSIS
 
-  daemon-manager [-h | --help] [-c | --config=<config-file>] [-v | --verbose] [-f | --foreground] [-d | --debug]
+SYNOPSIS
+--------
+daemon-manager [*-h* | *--help*] [*-c* | *--config=<config-file>*] [*-v* | *--verbose*] [*-f* | *--foreground*] [*-d* | *--debug*]
 
-=head1 DESCRIPTION
-
-B<daemon-manager> allows users to create and control their own background
+DESCRIPTION
+-----------
+'*daemon-manager*' allows users to create and control their own background
 processes (daemons). It allows these daemons to run as different users as
-specifed by L<daemon.conf(5)> and permitted by L<daemon-manager.conf(5)>.
+specifed by 'daemon.conf(5)' and permitted by 'daemon-manager.conf(5)'.
 
-Once a daemon is running, B<daemon-manager> will respawn it if it ever
+Once a daemon is running, 'daemon-manager' will respawn it if it ever
 quits. If the daemon is quitting and respawning too quickly then
-B<daemon-manager> will start delaying before respawning it. This delay is
+'daemon-manager' will start delaying before respawning it. This delay is
 called the cooldown time and is used to prevent heavy CPU usage when daemons
 with severe problems quit the instant they are started.
 
-=head1 CREATING DAEMONS
+CREATING DAEMONS
+----------------
+When it starts up, 'daemon-manager' looks in "~/.daemon-manager/daemons" for
+*.conf files that describe each daemon. For more information on the format of
+the daemon config files please see 'daemon.conf(5)'. Once you have created a
+daemon you can issue the `'rescan'' command to 'dmctl(1)' which will cause
+'daemon-manager' to rescan all the daemon config directories looking for new
+.conf files.
 
-When it starts up, daemon-manager looks in "~/.daemon-manager/daemons" for
-*.conf files that describe each daemon. For more information on the format
-of the daemon config files please see L<daemon.conf(5)>. Once you have
-created a daemon you can issue the C<rescan> command to L<dmctl(1)> which
-will cause daemon-manager to rescan all the daemon config directories,
-looking for new .conf files.
+CONTROLLING DAEMONS
+-------------------
+To start, stop, and inspect daemons, use the 'dmctl(1)' program.
 
-=head1 CONTROLLING DAEMONS
+DEBUGGING PROBLEMS
+------------------
+The 'daemon-manager' process by default sends log messages to syslog using the
+"daemon" facility. It only logs messages of "Notice" priority or higher unless
+the *-v* option has been specified (see below).
 
-To start, stop, and inspect daemons, use the L<dmctl(1)> program.
-
-=head1 DEBUGGING PROBLEMS
-
-The daemon-manager process by default logs to syslog using the "daemon"
-facility. It only logs messages of "Notice" priority or higher unless the
-B<-v> option has been specified (see below).
-
-If the daemons have been configured with the I<output> option set to C<log>
+If the daemons have been configured with the `'output'' option set to `'log''
 then their stdout and stderr will be redirected to a log file in
-"~/.daemon-manager/logs/<daemon>.conf" where <daemon> is the basename of the
+"~/.daemon-manager/logs/'<daemon>'.log" where '<daemon>' is the basename of the
 .conf file.
 
-=head1 COMMAND LINE OPTIONS
-
+COMMAND LINE OPTIONS
+--------------------
 This section describes the command line options for daemon-manager
 master process itself.
 
-=over
+*-h*::
+*--help*::
 
-=item I<-h>
+   This option causes 'daemon-manager' to print a quick usage line and then
+   quit.
 
-=item I<--help>
+*-c* '<config-file>'::
+*--config*='<config-file>'::
 
-This option causes daemon-manager to print a quick usage line and then quit.
+  Use this option to specify a non-standard path for the
+  'daemon-manager.conf(5)' file, instead of the default
+  "/etc/daemon-manager/daemon-manager.conf" location.
+  +
+  Regardless of where it is, the file must be owned by root and it must not be
+  world writable.
 
-=item I<-c <config-file> >
+*-v*::
+*--verbose*::
 
-=item I<--config=<config-file> >
+  Increase the logging verbosity. This option can be specified 2 times to
+  produce even more verbose output. The first time it will start outputting
+  syslog "Info" priority messages and the second time will add "Debug"
+  priority messages.
 
-Use this option to specify a non-standard path for the
-L<daemon-manager.conf(5)> file, instead of the default
-"/etc/daemon-manager/daemon-manager.conf" location.
+*-f*::
+*--foreground*::
 
-Regardless of where it is, the file must be owned by root and it must not be
-world readable.
+  By default 'daemon-manager' will detach and run in the background, returning
+  control to the shell when launched. Use this option to disable this feature
+  and keep 'daemon-manager' running in the foreground.
 
-=item I<-v>
+*-d*::
+*--debug*::
 
-=item I<--verbose>
+  This option causes 'daemon-manager' to log to stderr instead of syslog. As a
+  side effect, daemons with their 'output' option set to +discard+ will also
+  have their stderr and stdout streams output.
+  +
+  This option implies *--foreground*.
 
-Increase the logging verbosity. This option can be specified 2 times to
-produce even more verbose output. The first time it will start outputting
-syslog "Info" priority messages and the second time will add "Debug"
-priority messages.
+SEE ALSO
+--------
+'dmctl(1)', 'daemon-manager.conf(5)', 'daemon.conf(5)'
 
-=item I<-f>
-
-=item I<--foreground>
-
-By default daemon-manager will detach and run in the background, returning
-control to the shell when launched. Use this option to disable this feature
-and keep daemon-manager running in the foreground.
-
-=item I<-d>
-
-=item I<--debug>
-
-This option causes daemon-manager to log to stderr instead of syslog. As a
-side effect, daemons with their I<output> option set to C<discard> will also
-have their stderr and stdout streams output.
-
-This option implies I<--foreground>.
-
-=back
-
-=head1 SEE ALSO
-
-L<dmctl(1)>, L<daemon-manager.conf(5)>, L<daemon.conf(5)>
-
-=cut
-
-*/
+//*/
