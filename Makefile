@@ -53,6 +53,9 @@ install: all
 	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
 	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
 
+TAGS: *.c *.h *.cc
+	find . -name "*.[ch]" | etags -
+
 # Release stuff (only useful to the maintainer for making releases)
 release: daemon-manager-$(VERSION).tar.gz
 
