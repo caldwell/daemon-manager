@@ -1,0 +1,20 @@
+daemon-manager (0.9)
+
+  * Print elapsed times better in "dmctl status".
+
+  * Fix dmclt to work when abbreviated daemon name was the same as the user name.
+
+  * Made some error messages clearer.
+
+  * Fixed accept() not always working.
+
+  * Internal code cleanups.
+
+ -- David Caldwell <david@porkrind.org>  Mon, 07 Feb 2011 16:36:27 -0800
+
+daemon-manager (0.8)
+
+  * First public release
+
+ -- David Caldwell <david@porkrind.org>  Wed, 27 Oct 2010 03:32:59 -0700
+

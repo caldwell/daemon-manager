@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2010 David Caldwell,  All Rights Reserved. -*- c++ -*-
 #ifndef __STRINGUTIL_H__
 #define __STRINGUTIL_H__
 
@@ -34,5 +34,13 @@ void split(Container &list, string s, string separator)
     }
 }
 
+template<typename Container>
+string join(Container list, string separator)
+{
+    string s;
+    for (typename Container::iterator i = list.begin(); i != list.end(); i++)
+        s += (i == list.begin() ? "" : separator) + *i;
+    return s;
+}
 #endif /* __STRINGUTIL_H__ */
 

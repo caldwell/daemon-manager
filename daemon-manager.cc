@@ -1,4 +1,5 @@
 //  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+////
 
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +24,7 @@
 #include "log.h"
 #include "uniq.h"
 #include "options.h"
+#include "foreach.h"
 
 using namespace std;
 
@@ -153,39 +155,39 @@ static vector<user*> user_list_from_config(struct master_config config)
     map<string,user*> users;
     vector<user*> user_list;
 
-    for (vector<string>::iterator u = unique_users.begin(); u != unique_users.end(); u++) {
+    foreach(string u, unique_users) {
         try {
-            user_list.push_back(users[*u] = new user(*u));
-            users[*u]->create_dirs();
-            users[*u]->open_server_socket();
+            user_list.push_back(users[u] = new user(u));
+            users[u]->create_dirs();
+            users[u]->open_server_socket();
         } catch (std::exception &e) {
-            log(LOG_WARNING, "Ignoring %s: %s\n", u->c_str(), e.what());
+            log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
         }
     }
 
-    for (vector<user*>::iterator u = user_list.begin(); u != user_list.end(); u++) {
-        (*u)->can_run_as_uid[(*u)->uid] = true; // You can always run as yourself, however ill-advised.
-        if (config.runs_as.find((*u)->name) != config.runs_as.end()) {
-            for (config_list_it name = config.runs_as[(*u)->name].begin(); name != config.runs_as[(*u)->name].end(); name++) {
+    foreach(user *u, user_list) {
+        u->can_run_as_uid[u->uid] = true; // You can always run as yourself, however ill-advised.
+        if (config.runs_as.find(u->name) != config.runs_as.end()) {
+            for (config_list_it name = config.runs_as[u->name].begin(); name != config.runs_as[u->name].end(); name++) {
                 uid_t uid = uid_from_name(*name);
                 if (uid == (uid_t)-1)
-                    log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
+                    log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
                 else
-                    (*u)->can_run_as_uid[uid] = true;
+                    u->can_run_as_uid[uid] = true;
             }
         }
-        if (config.manages.find((*u)->name) != config.manages.end() || (*u)->uid == 0) {
-            vector<string> *manage_list = (*u)->uid == 0 ? &unique_users // Root can manage all users.
-                                                         : &config.manages[(*u)->name];
+        if (config.manages.find(u->name) != config.manages.end() || u->uid == 0) {
+            vector<string> *manage_list = u->uid == 0 ? &unique_users // Root can manage all users.
+                                                      : &config.manages[u->name];
             for (config_list_it name = manage_list->begin(); name != manage_list->end(); name++) {
                 if (!users[*name])
-                    log(LOG_ERR, "%s can't manage non-existant user \"%s\"\n", (*u)->name.c_str(), name->c_str());
+                    log(LOG_ERR, "%s can't manage non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
                 else
-                    (*u)->manages.push_back(users[*name]);
+                    u->manages.push_back(users[*name]);
             }
         }
-        if (!contains((*u)->manages, *u)) // We can always manage ourselves.
-            (*u)->manages.push_back(*u);
+        if (!contains(u->manages, u)) // We can always manage ourselves.
+            u->manages.push_back(u);
     }
     return user_list;
 }
@@ -194,26 +196,24 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
 {
     sort(existing.begin(), existing.end(), daemon_compare);
     vector<class daemon*> daemons;
-    // Now load up all the daemon config files for each user.
-    for (vector<user*>::iterator u = user_list.begin(); u != user_list.end(); u++) {
+    foreach(class user *u, user_list) {
         try {
-            vector<string> confs = (*u)->config_files();
-            for (vector<string>::iterator conf = confs.begin(); conf != confs.end(); conf++) {
+            foreach(string conf, u->config_files()) {
                 try {
-                    class daemon *d = new class daemon(*conf, *u);
+                    class daemon *d = new class daemon(conf, u);
                     if (!binary_search(existing.begin(), existing.end(), d, daemon_compare)) {
                         daemons.push_back(d);
-                        log(LOG_INFO, "Loaded daemon %s for %s\n", conf->c_str(), (*u)->name.c_str());
+                        log(LOG_INFO, "Loaded daemon %s for %s\n", conf.c_str(), u->name.c_str());
                     } else {
                         log(LOG_DEBUG, "Skipping daemon %s we've already seen\n", d->id.c_str());
                         delete d;
                     }
                 } catch(std::exception &e) {
-                    log(LOG_ERR, "Skipping %s's config file %s: %s\n", (*u)->name.c_str(), conf->c_str(), e.what());
+                    log(LOG_ERR, "Skipping %s's config file %s: %s\n", u->name.c_str(), conf.c_str(), e.what());
                 }
             }
         } catch (std::exception &e) {
-            log(LOG_ERR, "Skipping %s's config files: %s\n", (*u)->name.c_str(), e.what());
+            log(LOG_ERR, "Skipping %s's config files: %s\n", u->name.c_str(), e.what());
         }
     }
     return daemons;
@@ -222,10 +222,10 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
 static void autostart(vector<class daemon*> daemons)
 {
     // Now start all the daemons marked "autostart"
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        if ((*d)->autostart)
-            try { (*d)->start(); }
-            catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", (*d)->id.c_str(), e.what()); }
+    foreach(class daemon *d, daemons)
+        if (d->config.autostart)
+            try { d->start(); }
+            catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", d->id.c_str(), e.what()); }
 }
 
 static void distribute_signal_to_children(int sig)
@@ -245,14 +245,15 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
     signal(SIGCHLD, handle_sig_child);
     signal(SIGTERM, distribute_signal_to_children);
     signal(SIGINT,  distribute_signal_to_children);
+    signal(SIGPIPE, SIG_IGN);
     typedef map<int,user*> fd_map;
     typedef map<int,user*>::iterator fd_map_it;
 
     map<int,user*> listeners;
     map<int,user*> clients;
 
-    for (vector<class user*>::iterator u = users.begin(); u != users.end(); u++)
-        listeners[(*u)->command_socket] = *u;
+    foreach(class user *u, users)
+        listeners[u->command_socket] = u;
 
     while (1) {
         struct pollfd fd[listeners.size() + clients.size()];
@@ -268,16 +269,16 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         }
 
         time_t wait_time=-1; // infinite
-        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-            if ((*d)->state == coolingdown)
-                wait_time = wait_time < 0 ? (*d)->cooldown_remaining() * 1000
-                                          : min(wait_time, (*d)->cooldown_remaining() * 1000);
+        foreach(class daemon *d, daemons)
+            if (d->current.state == coolingdown)
+                wait_time = wait_time < 0 ? d->cooldown_remaining() * 1000
+                                          : min(wait_time, d->cooldown_remaining() * 1000);
 
         int got = poll(fd, nfds, wait_time);
 
         // Cull daemons whose config files have been deleted
         for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end();)
-            if (((*d)->state == stopped || (*d)->state == coolingdown) && !(*d)->exists()) {
+            if (((*d)->current.state == stopped || (*d)->current.state == coolingdown) && !(*d)->exists()) {
                 log(LOG_INFO, "Culling %s because %s has disappeared.\n", (*d)->id.c_str(), (*d)->config_file.c_str());
                 delete *d;
                 d = daemons.erase(d);
@@ -290,7 +291,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                 if (fd[i].revents & POLLIN) {
                     if (listeners.count(fd[i].fd)) {
                         struct sockaddr_un addr;
-                        socklen_t addr_len;
+                        socklen_t addr_len = sizeof(addr);
                         int client = accept(fd[i].fd, (struct sockaddr*) &addr, &addr_len);
                         if (client == -1) {
                             log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
@@ -322,22 +323,22 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         // Reap/respawn our children
         for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
             log(LOG_NOTICE, "Child %d exited\n", kid);
-            for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-                if ((*d)->pid == kid) {
-                    if ((*d)->state == running)
-                        try { (*d)->respawn(); }
-                        catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
+            foreach(class daemon *d, daemons)
+                if (d->current.pid == kid) {
+                    if (d->current.state == running)
+                        try { d->respawn(); }
+                        catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
                     else
-                        (*d)->reap();
+                        d->reap();
                     break;
                 }
         }
         // Start up daemons that have cooled down
-        for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-            if ((*d)->state == coolingdown && (*d)->cooldown_remaining() == 0) {
-                log(LOG_INFO, "Cooldown time has arrived for %s\n", (*d)->id.c_str());
-                try { (*d)->start(true); }
-                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", (*d)->id.c_str(), e.what()); }
+        foreach(class daemon *d, daemons)
+            if (d->current.state == coolingdown && d->cooldown_remaining() == 0) {
+                log(LOG_INFO, "Cooldown time has arrived for %s\n", d->id.c_str());
+                try { d->start(true); }
+                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
             }
     }
 }
@@ -345,10 +346,10 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons)
 {
     vector<class daemon*> manageable;
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        for (vector<class user*>::iterator u = user->manages.begin(); u != user->manages.end(); u++)
-            if ((*d)->user == *u) {
-                manageable.push_back(*d);
+    foreach(class daemon *d, daemons)
+        foreach(class user *u, user->manages)
+            if (d->user == u) {
+                manageable.push_back(d);
                 break;
             }
     return manageable;
@@ -357,9 +358,24 @@ static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*
 static string daemon_id_list(vector<class daemon*> daemons)
 {
     string resp = "";
-    for (vector<class daemon*>::iterator d = daemons.begin(); d != daemons.end(); d++)
-        resp += (resp.length() ? "," : "") + (*d)->id;
+    foreach(class daemon *d, daemons)
+        resp += (resp.length() ? "," : "") + d->id;
     return resp;
+}
+
+#include <list>
+#include "stringutil.h"
+static string elapsed(time_t seconds)
+{
+    std::list<string> s;
+                 s.push_front(strprintf("%lds", seconds % 60)); seconds /= 60;
+    if (seconds) s.push_front(strprintf("%ldm", seconds % 60)); seconds /= 60;
+    if (seconds) s.push_front(strprintf("%ldh", seconds % 24)); seconds /= 24;
+    if (seconds) s.push_front(strprintf("%ldd", seconds %  7)); seconds /=  7;
+    if (seconds) s.push_front(strprintf("%ldw", seconds     ));
+
+    s.resize(2);
+    return join(s, "");
 }
 
 static string do_command(string command_line, user *user, vector<class daemon*> *daemons)
@@ -381,17 +397,17 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     }
 
     if (cmd == "status") {
-        string resp = strprintf("%-30s %-15s %6s %8s %8s %6s %6s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
-        for (vector<class daemon*>::iterator d = manageable.begin(); d != manageable.end(); d++)
-          if (arg.empty() || arg == (*d)->id)
-            resp += strprintf("%-30s %-15s %6d %8zd %8d %6ld %6ld\n",
-                              (*d)->id.c_str(),
-                              (*d)->state_str().c_str(),
-                              (*d)->pid,
-                              (*d)->respawns,
-                              (int)(*d)->cooldown_remaining(),
-                              (*d)->pid ? time(NULL) - (*d)->respawn_time : 0,
-                              (*d)->pid ? time(NULL) - (*d)->start_time   : 0);
+        string resp = strprintf("%-30s %-15s %6s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
+        foreach(class daemon *d, manageable)
+          if (arg.empty() || arg == d->id)
+            resp += strprintf("%-30s %-15s %6d %8zd %8s %8s %8s\n",
+                              d->id.c_str(),
+                              d->state_str().c_str(),
+                              d->current.pid,
+                              d->current.respawns,
+                              elapsed(d->cooldown_remaining()).c_str(),
+                              elapsed(d->current.pid ? time(NULL) - d->current.respawn_time : 0).c_str(),
+                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str());
         return "OK: " + resp;
     }
 
@@ -408,7 +424,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
     class daemon *daemon = *d;
 
-    if      (cmd == "start")   if (daemon->pid) throw_str("Already running \"%s\"", daemon->id.c_str());
+    if      (cmd == "start")   if (daemon->current.pid) throw_str("Already running \"%s\"", daemon->id.c_str());
                                else daemon->start();
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
@@ -442,108 +458,104 @@ static void dump_config(struct master_config config)
 }
 
 /*
+////
 
-=head1 NAME
+daemon-manager(1)
+=================
+David Caldwell <david@porkrind.org>
 
+NAME
+----
 daemon-manager - Allow users to setup and control daemons
 
-=head1 SYNOPSIS
 
-  daemon-manager [-h | --help] [-c | --config=<config-file>] [-v | --verbose] [-f | --foreground] [-d | --debug]
+SYNOPSIS
+--------
+daemon-manager [*-h* | *--help*] [*-c* | *--config=<config-file>*] [*-v* | *--verbose*] [*-f* | *--foreground*] [*-d* | *--debug*]
 
-=head1 DESCRIPTION
-
-B<daemon-manager> allows users to create and control their own background
+DESCRIPTION
+-----------
+'*daemon-manager*' allows users to create and control their own background
 processes (daemons). It allows these daemons to run as different users as
-specifed by L<daemon.conf(5)> and permitted by L<daemon-manager.conf(5)>.
+specifed by 'daemon.conf(5)' and permitted by 'daemon-manager.conf(5)'.
 
-Once a daemon is running, B<daemon-manager> will respawn it if it ever
+Once a daemon is running, 'daemon-manager' will respawn it if it ever
 quits. If the daemon is quitting and respawning too quickly then
-B<daemon-manager> will start delaying before respawning it. This delay is
+'daemon-manager' will start delaying before respawning it. This delay is
 called the cooldown time and is used to prevent heavy CPU usage when daemons
 with severe problems quit the instant they are started.
 
-=head1 CREATING DAEMONS
+CREATING DAEMONS
+----------------
+When it starts up, 'daemon-manager' looks in "~/.daemon-manager/daemons" for
+*.conf files that describe each daemon. For more information on the format of
+the daemon config files please see 'daemon.conf(5)'. Once you have created a
+daemon you can issue the `'rescan'' command to 'dmctl(1)' which will cause
+'daemon-manager' to rescan all the daemon config directories looking for new
+.conf files.
 
-When it starts up, daemon-manager looks in "~/.daemon-manager/daemons" for
-*.conf files that describe each daemon. For more information on the format
-of the daemon config files please see L<daemon.conf(5)>. Once you have
-created a daemon you can issue the C<rescan> command to L<dmctl(1)> which
-will cause daemon-manager to rescan all the daemon config directories,
-looking for new .conf files.
+CONTROLLING DAEMONS
+-------------------
+To start, stop, and inspect daemons, use the 'dmctl(1)' program.
 
-=head1 CONTROLLING DAEMONS
+DEBUGGING PROBLEMS
+------------------
+The 'daemon-manager' process by default sends log messages to syslog using the
+"daemon" facility. It only logs messages of "Notice" priority or higher unless
+the *-v* option has been specified (see below).
 
-To start, stop, and inspect daemons, use the L<dmctl(1)> program.
-
-=head1 DEBUGGING PROBLEMS
-
-The daemon-manager process by default logs to syslog using the "daemon"
-facility. It only logs messages of "Notice" priority or higher unless the
-B<-v> option has been specified (see below).
-
-If the daemons have been configured with the I<output> option set to C<log>
+If the daemons have been configured with the `'output'' option set to `'log''
 then their stdout and stderr will be redirected to a log file in
-"~/.daemon-manager/logs/<daemon>.conf" where <daemon> is the basename of the
+"~/.daemon-manager/logs/'<daemon>'.log" where '<daemon>' is the basename of the
 .conf file.
 
-=head1 COMMAND LINE OPTIONS
-
+COMMAND LINE OPTIONS
+--------------------
 This section describes the command line options for daemon-manager
 master process itself.
 
-=over
+*-h*::
+*--help*::
 
-=item I<-h>
+   This option causes 'daemon-manager' to print a quick usage line and then
+   quit.
 
-=item I<--help>
+*-c* '<config-file>'::
+*--config*='<config-file>'::
 
-This option causes daemon-manager to print a quick usage line and then quit.
+  Use this option to specify a non-standard path for the
+  'daemon-manager.conf(5)' file, instead of the default
+  "/etc/daemon-manager/daemon-manager.conf" location.
+  +
+  Regardless of where it is, the file must be owned by root and it must not be
+  world writable.
 
-=item I<-c <config-file> >
+*-v*::
+*--verbose*::
 
-=item I<--config=<config-file> >
+  Increase the logging verbosity. This option can be specified 2 times to
+  produce even more verbose output. The first time it will start outputting
+  syslog "Info" priority messages and the second time will add "Debug"
+  priority messages.
 
-Use this option to specify a non-standard path for the
-L<daemon-manager.conf(5)> file, instead of the default
-"/etc/daemon-manager/daemon-manager.conf" location.
+*-f*::
+*--foreground*::
 
-Regardless of where it is, the file must be owned by root and it must not be
-world readable.
+  By default 'daemon-manager' will detach and run in the background, returning
+  control to the shell when launched. Use this option to disable this feature
+  and keep 'daemon-manager' running in the foreground.
 
-=item I<-v>
+*-d*::
+*--debug*::
 
-=item I<--verbose>
+  This option causes 'daemon-manager' to log to stderr instead of syslog. As a
+  side effect, daemons with their 'output' option set to +discard+ will also
+  have their stderr and stdout streams output.
+  +
+  This option implies *--foreground*.
 
-Increase the logging verbosity. This option can be specified 2 times to
-produce even more verbose output. The first time it will start outputting
-syslog "Info" priority messages and the second time will add "Debug"
-priority messages.
+SEE ALSO
+--------
+'dmctl(1)', 'daemon-manager.conf(5)', 'daemon.conf(5)'
 
-=item I<-f>
-
-=item I<--foreground>
-
-By default daemon-manager will detach and run in the background, returning
-control to the shell when launched. Use this option to disable this feature
-and keep daemon-manager running in the foreground.
-
-=item I<-d>
-
-=item I<--debug>
-
-This option causes daemon-manager to log to stderr instead of syslog. As a
-side effect, daemons with their I<output> option set to C<discard> will also
-have their stderr and stdout streams output.
-
-This option implies I<--foreground>.
-
-=back
-
-=head1 SEE ALSO
-
-L<dmctl(1)>, L<daemon-manager.conf(5)>, L<daemon.conf(5)>
-
-=cut
-
-*/
+//*/

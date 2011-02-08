@@ -1,4 +1,4 @@
-VERSION=0.8
+VERSION=0.9
 
 SBIN=daemon-manager
 BIN=dmctl
@@ -24,13 +24,13 @@ MAN5=daemon.conf.5 daemon-manager.conf.5
 man: $(MAN1) $(MAN5)
 all: man
 
-PODFLAGS=--release=daemon-manager-$(VERSION) --center="Daemon Manager Documentation"
+ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation"
 
 %.1 : %.cc
-	pod2man $(PODFLAGS) $< $@
+	a2x $(ASCIIDOC_FLAGS) -f manpage $<
 
-%.5 : %.pod
-	pod2man $(PODFLAGS) $< $@
+%.5 : %.asciidoc
+	a2x $(ASCIIDOC_FLAGS) -f manpage $<
 
 # Install stuff
 DESTDIR    =
@@ -53,11 +53,14 @@ install: all
 	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
 	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
 
+TAGS: *.c *.h *.cc
+	find . -name "*.[ch]" | etags -
+
 # Release stuff (only useful to the maintainer for making releases)
 release: daemon-manager-$(VERSION).tar.gz
 
 daemon-manager-$(VERSION).tar.gz: daemon-manager-$(VERSION)
-	tar cf $@ $<
+	tar czf $@ $<
 
 daemon-manager-$(VERSION):
 	rm -rf $@

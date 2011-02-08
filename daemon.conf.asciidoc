@@ -1,0 +1,112 @@
+// -*- text -*-
+
+daemon.conf(5)
+==============
+David Caldwell <david@porkrind.org>
+
+NAME
+----
+daemon.conf - Daemon configuration file for Daemon Manager
+
+SYNOPSIS
+--------
+  # Example conf file:
+  start=./daemon_exe --flags   # Line will be interpretted by /bin/sh
+  dir=/some/working/dir        # working dir        default: /
+  user=nobody                  # Who to run as      default: the user
+  output=log                   # "log" or "discard" default: discard
+  autostart=no                 # "yes" or "no"      default: yes
+
+DESCRIPTION
+-----------
+This manual page describes the config files for daemons controlled by
+'daemon-manager(1)'. The config files are loaded out of the user's home
+directory: *'~/.daemon-manager/daemons'*. Root's config files are loaded from
+*'/etc/daemon-manager/daemons'*. Only files with the suffix ``.conf'' will be
+loaded.
+
+The config files must not be world writable and must be owned by the user
+whose home directory they are in.
+
+Each config file describes a single daemon.
+
+FILE FORMAT
+-----------
+The config file is a plain text file. The general format is
+
+  option = value
+
+White space is stripped from around options and values.
+
+Comments are stripped from lines before they are parsed. A comment starts with
+a "#" and continues to the end of a line.
+
+Blank lines are ignored.
+
+CONFIGURATION OPTIONS
+---------------------
+
+*start*::
+
+  This is the line that will be fed to /bin/sh in order to start the
+  daemon. This option is required. The daemon is required to stay in the
+  foreground. If it tries to daemonize then 'daemon-manager(1)' will think it
+  has exited prematurely and will attempt to restart it. It is also a good idea
+  to use _sh_'s 'exec' built-in to jettison the shell while launching the
+  daemon.
+
+*dir*::
+
+  This option specifies the working directory. The daemon will be started from
+  this directory. If the 'dir' option is not specified it defaults to ``/''.
+
+*user*::
+
+  Use this option to specify which user the daemon should be run as. By default
+  users are only allowed to start daemons as themselves. The system
+  administrator can allow a user to run as another user by adding to the
+  'run_as' section of the 'daemon-manager.conf(5)' file.
+
+*output*::
+
+  This option controls whether stdout and stderr from the daemon should be
+  logged or discarded.
+  +
+  The valid values for this option are ``log'' or ``discard'', with
+  ``discard'' being the default if the option is not specified.
+  +
+  If the daemons have been configured with the 'output' option set to ``log''
+  then their stdout and stderr will be redirected to a log file in
+  ``~/.daemon-manager/log/_<daemon>_.log'' where ``__<daemon>__'' is the basename of the
+  .conf file.
+
+*autostart*::
+
+  If this option is ``yes'' or left unspecified then the daemon will be started
+  automatically when 'daemon-manager(5)' itself is started.
+  +
+  If this option is ``no'' then it will only be started by _dmctl(1)_'s
+  ``start'' command.
+
+*sockfile*::
+
+  If this option is set to ``yes'' then 'daemon-manager(5)' will create a
+  directory with the proper permissions and pass an environment variable named
+  SOCK_FILE to the daemon. The socket itself is not created; that is left to
+  the daemon.
+  +
+  The socket path will be ``/var/run/daemon-manager/__<run-as-user>__/__<owner-user>__/__<daemon-name>__.socket'' ,
+  where ``__<run-as-user>__'' is the 'user' option in this file as described
+  above, ``__<owner-user>__'' is the user name of the owner of the daemon (which
+  user's ``daemons'' directory it was defined in), and ``__<daemon-name>__'' is the
+  basename of the daemon config file minus the ``.conf'' extension.
+  +
+  The rationale is that if there are a large number of FastCGI daemons in the
+  system then it is convenient to have their sockets organized and guess-able
+  just by knowing the daemon-id (obtained from 'dmctl(1)') and the system's
+  run_as policy (as defined in 'daemon-manager.conf(5)').
+
+SEE ALSO
+--------
+'daemon-manager(1)', 'daemon-manager.conf(5)', 'dmctl(1)'
+
