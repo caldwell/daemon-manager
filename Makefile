@@ -60,7 +60,7 @@ TAGS: *.c *.h *.cc
 release: daemon-manager-$(VERSION).tar.gz
 
 daemon-manager-$(VERSION).tar.gz: daemon-manager-$(VERSION)
-	tar cf $@ $<
+	tar czf $@ $<
 
 daemon-manager-$(VERSION):
 	rm -rf $@
