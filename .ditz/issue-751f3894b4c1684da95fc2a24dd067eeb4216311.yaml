@@ -1,0 +1,20 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: "[run_as] should be [can_run_as]"
+desc: |-
+  Jim suggested it, I think it's a good idea.
+  Possibly think about backward compatibility.
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2011-07-05 05:48:29.647458 Z
+references: []
+
+id: 751f3894b4c1684da95fc2a24dd067eeb4216311
+log_events: 
+- - 2011-07-05 05:48:29.647690 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
