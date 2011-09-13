@@ -1,0 +1,30 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Missing home directory cases super fast polling (bad fs in poll)
+desc: |-
+  This code:
+          try {
+              user_list.push_back(users[u] = new user(u));
+              users[u]->create_dirs();
+              users[u]->open_server_socket();
+          } catch (std::exception &e) {
+              log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
+          }
+  Is at fault. If open_server_socket() throws then the user is already in the user list.
+  Later when we go through the list the we try to use the socket which isn't open and has
+  random crap for the filehandle. This causes poll to fail and the main loop ends up polling
+  with no delay, taking 100% of the CPU.
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2011-09-13 12:01:19.204091 Z
+references: []
+
+id: a83e1c33e12261dff660db3d1a001c0f3f59d162
+log_events: 
+- - 2011-09-13 12:01:19.204255 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
