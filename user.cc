@@ -38,6 +38,11 @@ user::user(uid_t uid)
     init(p);
 }
 
+user::~user()
+{
+    close(command_socket);
+}
+
 void user::init(struct passwd *p)
 {
     name = string(p->pw_name);
