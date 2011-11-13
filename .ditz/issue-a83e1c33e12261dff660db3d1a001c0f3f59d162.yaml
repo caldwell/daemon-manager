@@ -37,5 +37,16 @@ log_events:
     Date:   Sun Nov 13 14:54:47 2011 -0800
     
         [user.cc] Don't let command_socket be uninitialized.
-        
+    
         Re: a83e1c33e1
+- - 2011-11-13 23:00:12.805284 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit 9b80ad29cb3a56fbd8d474e977a809780086bd6e
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:58:47 2011 -0800
+    
+        [daemon-manager.cc] Fix users with invalid home directories staying in the user list and screwing up poll() later on.
+        
+        Closes: a83e1c33e1
