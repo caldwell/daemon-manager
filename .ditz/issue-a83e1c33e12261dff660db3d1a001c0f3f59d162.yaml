@@ -17,8 +17,8 @@ type: :bugfix
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-09-13 12:01:19.204091 Z
 references: []
 
@@ -48,5 +48,16 @@ log_events:
     Date:   Sun Nov 13 14:55:39 2011 -0800
     
         [user] Add a desstructor that closes the command_socket.
-        
+    
         Re: a83e1c33e1
+- - 2011-11-13 23:03:17.000764 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit 9b80ad29cb3a56fbd8d474e977a809780086bd6e
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:58:47 2011 -0800
+    
+        [daemon-manager.cc] Fix users with invalid home directories staying in the user list and screwing up poll() later on.
+        
+        Closes: a83e1c33e1
