@@ -2,18 +2,18 @@
 #ifndef __STRINGUTIL_H__
 #define __STRINGUTIL_H__
 
-static inline string trim(string s)
+static inline std::string trim(std::string s)
 {
-    string::iterator start;
+    std::string::iterator start;
     for (start = s.begin(); start != s.end() && isspace(*start); start++) // Front
         ;
-    string::iterator end;
+    std::string::iterator end;
     for (end = s.end()-1; end >= start && isspace(*end); end--) // Back
         ;
-    return string(start, end+1);
+    return std::string(start, end+1);
 }
 
-static inline string chomp(string s)
+static inline std::string chomp(std::string s)
 {
     if (s.length() && *(s.end()-1) == '\n')
         return s.substr(0, s.length()-1);
@@ -22,7 +22,7 @@ static inline string chomp(string s)
 
 // Sadly we have to pass in the list since we can't templatize over a return value. Weak. :-(
 template<typename Container>
-void split(Container &list, string s, string separator)
+void split(Container &list, std::string s, std::string separator)
 {
     size_t start = 0, sep = 0;
     while (start < s.length()) {
@@ -35,9 +35,9 @@ void split(Container &list, string s, string separator)
 }
 
 template<typename Container>
-string join(Container list, string separator)
+std::string join(Container list, std::string separator)
 {
-    string s;
+    std::string s;
     for (typename Container::iterator i = list.begin(); i != list.end(); i++)
         s += (i == list.begin() ? "" : separator) + *i;
     return s;
