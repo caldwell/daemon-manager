@@ -37,5 +37,16 @@ log_events:
     Date:   Sun Nov 13 14:54:47 2011 -0800
     
         [user.cc] Don't let command_socket be uninitialized.
+    
+        Re: a83e1c33e1
+- - 2011-11-13 23:02:59.231748 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit ba59e46bf390cb3be675f655c55e643bacc26f23
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:55:39 2011 -0800
+    
+        [user] Add a desstructor that closes the command_socket.
         
         Re: a83e1c33e1
