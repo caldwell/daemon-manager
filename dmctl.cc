@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -75,15 +76,19 @@ static string do_command(string command, user *me)
     if (got < 0)  err(1, "Poll failed");
     if (got == 0) err(1, "Poll timed out.");
 
-    char buf[1000];
-    int red = read(me->command_socket, buf, sizeof(buf)-1);
-    if (red < 0)   err(1, "No response from daemon-manager");
-    if (red == 0) errx(1, "No response from daemon-manager.");
+    string out;
+    while (1) {
+        char buf[256];
+        int red = read(me->command_socket, buf, sizeof(buf)-1);
+        if (red == 0 || red < 0 && errno == EAGAIN) break; // done.
+        if (red < 0)   err(1, "No response from daemon-manager");
+        out.append(buf, red);
+    }
+    if (out.empty()) errx(1, "No response from daemon-manager.");
 
-    buf[red] = '\0';
-    if (strcmp(buf, "OK\n") == 0)     return string("");
-    if (strncmp(buf, "OK: ", 4) == 0) return string(buf+4);
-    throw std::runtime_error(buf);
+    if (out == "OK\n")              return string("");
+    if (out.substr(0, 4) == "OK: ") return out.substr(4);
+    throw std::runtime_error(out);
 }
 
 static string canonify(string id, user *u)
