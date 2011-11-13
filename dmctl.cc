@@ -34,7 +34,7 @@ int main(int argc, char **argv)
     options o(argc, argv);
     if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
-    if (o.bad_args() || o.args.size() < 1 || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+    if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
 
     user *me;
     try {
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
         errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
     }
 
-    string command = o.args[0];
+    string command = o.args.size() >= 1 ? o.args[0] : "status";
     if (o.args.size() == 2)
         command += string(" ") + canonify(o.args[1], me);
 
@@ -148,7 +148,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 *dmctl* allows the user to communicate and interact with the
-L<daemon-manager(1)> daemon.
+L<daemon-manager(1)> daemon. If no command is given, "*status*" is assumed.
 
 COMMANDS
 --------
