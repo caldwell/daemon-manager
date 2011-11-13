@@ -9,8 +9,8 @@ type: :feature
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-07-05 05:52:20.198518 Z
 references: []
 
@@ -20,3 +20,14 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2011-11-13 22:33:18.886211 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit f3810ae465b749282fb77cde24a4a4036c833bbd
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 03:43:59 2011 -0800
+    
+        [daemon-manager.cc] Re-exec ourselves on SIGHUP, saving our state in a temp file (json format).
+        
+        Closes: 2f14ff97a47
