@@ -81,8 +81,10 @@ void daemon::start(bool respawn)
         char err[1000]="";
         int red = read(fd[0], &err, sizeof(err));
         close(fd[0]);
-        if(red > 0)
+        if(red > 0) {
+            this->reap();
             throw runtime_error(string(err));
+        }
         current.pid = child; // Parent
         log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
         current.respawn_time = time(NULL);
