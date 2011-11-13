@@ -23,6 +23,7 @@ using namespace std;
 map<string,user*> users;
 
 user::user(string name)
+        : command_socket(-1)
 {
     struct passwd *p = getpwnam(name.c_str());
     if (!p) throw_str("No user named \"%s\"", name.c_str());
@@ -30,6 +31,7 @@ user::user(string name)
 }
 
 user::user(uid_t uid)
+        : command_socket(-1)
 {
     struct passwd *p = getpwuid(uid);
     if (!p) throw_str("No user with uid %d", uid);
