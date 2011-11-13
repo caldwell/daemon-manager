@@ -180,13 +180,16 @@ static vector<user*> user_list_from_config(struct master_config config)
     map<string,user*> users;
     vector<user*> user_list;
 
-    foreach(string u, unique_users) {
+    foreach(string name, unique_users) {
+        class user *u=NULL;
         try {
-            user_list.push_back(users[u] = new user(u));
-            users[u]->create_dirs();
-            users[u]->open_server_socket();
+            u = new user(name);
+            u->create_dirs();
+            u->open_server_socket();
+            user_list.push_back(users[name] = u);
         } catch (std::exception &e) {
-            log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
+            log(LOG_WARNING, "Ignoring %s: %s\n", name.c_str(), e.what());
+            delete u;
         }
     }
 
