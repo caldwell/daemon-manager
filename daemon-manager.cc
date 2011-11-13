@@ -338,7 +338,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             if (d->current.state == coolingdown && d->cooldown_remaining() == 0) {
                 log(LOG_INFO, "Cooldown time has arrived for %s\n", d->id.c_str());
                 try { d->start(true); }
-                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
+                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn cooled-down %s: %s\n", d->id.c_str(), e.what()); }
             }
     }
 }
