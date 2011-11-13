@@ -572,7 +572,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
                               d->current.respawns,
                               elapsed(d->cooldown_remaining()).c_str(),
                               elapsed(d->current.pid ? time(NULL) - d->current.respawn_time : 0).c_str(),
-                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str());
+                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str())
+                + d->get_and_clear_whines();
         return "OK: " + resp;
     }
 
@@ -582,7 +583,10 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
             return "OK: No new daemons found.\n";
         daemons->insert(daemons->end(), new_daemons.begin(), new_daemons.end());
         autostart(new_daemons);
-        return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n";
+        string fine_whines;
+        foreach(class daemon *d, new_daemons)
+            fine_whines += d->get_and_clear_whines();
+        return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n" + fine_whines;
     }
 
     vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
@@ -594,6 +598,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
     else throw_str("bad command \"%s\"", cmd.c_str());
+    if (!daemon->whine_list.empty())
+        return "OK: " + daemon->get_and_clear_whines();
   } catch (std::exception &e) {
       return string("ERR: ") + e.what() + "\n";
   }

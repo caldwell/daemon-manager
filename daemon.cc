@@ -33,6 +33,17 @@ daemon::daemon(string config_file, class user *user)
     load_config();
 }
 
+string daemon::get_and_clear_whines()
+{
+    string fine_whines;
+    if (!whine_list.empty()) {
+        foreach(string whine, whine_list)
+            fine_whines += whine;
+        whine_list.clear();
+    }
+    return fine_whines;
+}
+
 void daemon::load_config()
 {
     struct stat st = permissions::check(config_file, 0113, user->uid);
@@ -41,13 +52,15 @@ void daemon::load_config()
     map<string,string> cfg = parse_daemon_config(config_file);
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
-    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile" };
+    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile", "shell" };
     typedef pair<string,string> str_pair;
     foreach(str_pair c, cfg) {
-        foreach(const char *key, valid_keys) {
+        foreach(const char *key, valid_keys)
             if (c.first == key) goto found;
-        }
-        log(LOG_WARNING, "Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
+        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
+          log(LOG_WARNING, "%s", warning.c_str());
+          whine_list.push_back("Warning: "+warning);
+        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
       found:;
     }
 

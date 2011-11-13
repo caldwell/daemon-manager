@@ -5,6 +5,7 @@
 #include "user.h"
 #include "passwd.h"
 #include <string>
+#include <list>
 #include <time.h>
 
 enum run_state { stopped, stopping, running, coolingdown };
@@ -39,6 +40,10 @@ class daemon {
         time_t start_time;
         time_t respawn_time;
     } current;
+
+    // Something important to warn the user about.
+    std::list<string> whine_list;
+    string get_and_clear_whines();
 
     daemon(std::string config_file, class user *user);
 
