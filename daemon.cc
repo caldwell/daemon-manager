@@ -157,17 +157,19 @@ void daemon::start(bool respawn)
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
-        vector<string> elist;
-        elist.push_back("HOME=" + user->homedir);
-        elist.push_back("LOGNAME=" + user->name);
-        elist.push_back("SHELL=/bin/sh");
-        elist.push_back("PATH=/usr/bin:/bin");
+        map<string,string> ENV;
+        ENV["HOME"]    = user->homedir;
+        ENV["LOGNAME"] = user->name;
+        ENV["SHELL"]   = config.shell != "" ? config.shell : "/bin/sh";
+        ENV["PATH"]    = "/usr/bin:/bin";
         if (config.want_sockfile)
-            elist.push_back("SOCK_FILE=" + sock_file());
-        const char *env[elist.size()+1];
-        for (size_t i=0; i<elist.size(); i++)
-            env[i] = elist[i].c_str();
-        env[elist.size()] = NULL;
+            ENV["SOCK_FILE"] = sock_file();
+        string envs[ENV.size()], *es = envs;       // Storage for the full env c++ strings.
+        const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
+        typedef pair<string,string> pss;
+        foreach(pss ep, ENV)
+            *e++ = (*es++ = ep.first + "=" + ep.second).c_str();
+        *e = NULL;
         execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
