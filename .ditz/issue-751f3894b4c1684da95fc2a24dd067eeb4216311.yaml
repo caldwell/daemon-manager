@@ -27,7 +27,18 @@ log_events:
     Date:   Sun Nov 13 15:21:24 2011 -0800
     
         runs_as -> can_run_as which reads better and makes the config less confusing (hopefully).
-        
+    
         [runs_as] remains for backwards compatibility but is not documented.
-        
+    
         Closes: 751f3894b4
+- - 2011-11-13 23:29:19.788933 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit b1ce8038359633b4c29252e2f1bb93fcb9ebe53d
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 15:28:32 2011 -0800
+    
+        [config.cc] Instead of silently accepting the old [runs_as], complain loudly in the log.
+        
+        Re: 751f3894b4
