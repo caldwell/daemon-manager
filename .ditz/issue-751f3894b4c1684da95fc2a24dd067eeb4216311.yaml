@@ -7,8 +7,8 @@ type: :bugfix
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2011-07-05 05:48:29.647458 Z
 references: []
 
@@ -18,3 +18,16 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2011-11-13 23:28:57.748516 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit 720908ffc9e831c7e6449f41008ea93fed555fa4
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 15:21:24 2011 -0800
+    
+        runs_as -> can_run_as which reads better and makes the config less confusing (hopefully).
+        
+        [runs_as] remains for backwards compatibility but is not documented.
+        
+        Closes: 751f3894b4
