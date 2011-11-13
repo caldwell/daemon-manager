@@ -28,3 +28,14 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2011-11-13 23:02:34.144922 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit 08a15ff744117d682bc50baf4afc1433d624222e
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:54:47 2011 -0800
+    
+        [user.cc] Don't let command_socket be uninitialized.
+        
+        Re: a83e1c33e1
