@@ -53,6 +53,9 @@ class daemon {
     void reap();
 
     time_t cooldown_remaining();
+
+    std::map<std::string,std::string> to_map();
+    void from_map(map<string,string> data);
 };
 
 bool daemon_compare(class daemon *a, class daemon *b);

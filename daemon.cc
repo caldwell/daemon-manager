@@ -189,3 +189,44 @@ bool daemon_compare(class daemon *a, class daemon *b)
 {
     return a->config_file < b->config_file;
 }
+
+map<string,string> daemon::to_map()
+{
+    map <string,string> data;
+    data["id"]                     = id;
+    data["name"]                   = name;
+    data["config_file"]            = config_file;
+    data["user"]                   = user->name;
+    data["current.pid"]            = strprintf("%d", current.pid);
+    data["current.state"]          = _state_str[current.state];
+    data["current.cooldown"]       = strprintf("%lld", (long long)current.cooldown);
+    data["current.cooldown_start"] = strprintf("%lld", (long long)current.cooldown_start);
+    data["current.respawns"]       = strprintf("%zd", current.respawns);
+    data["current.start_time"]     = strprintf("%lld", (long long)current.start_time);
+    data["current.respawn_time"]   = strprintf("%lld", (long long)current.respawn_time);
+    return data;
+}
+
+#include "lengthof.h"
+void daemon::from_map(map<string,string> data)
+{
+    if (id          != data["id"])          throw_str("ids do not match: \"%s\" vs \"%s\"!", id.c_str(), data["id"].c_str());
+    if (name        != data["name"])        throw_str("names do not match: \"%s\" vs \"%s\"!", name.c_str(), data["name"].c_str());
+    if (config_file != data["config_file"]) throw_str("config_files do not match: \"%s\" vs \"%s\"!", config_file.c_str(), data["config_file"].c_str());
+    if (user->name  != data["user"])        throw_str("users do not match: \"%s\" vs \"%s\"!", user->name.c_str(), data["user"].c_str());
+
+    for (size_t current_state = 0; current_state < lengthof(_state_str); current_state++)
+        if (_state_str[current_state] == data["current.state"]) {
+            current.state = (run_state) current_state;
+            goto found;
+        }
+    throw_str("current.state \"%s\" is invalid!", data["current.state"].c_str());
+  found:
+
+    current.pid            = strtoul(data["current.pid"].c_str(), NULL, 10);
+    current.cooldown       = strtoull(data["current.cooldown"].c_str(), NULL, 10);
+    current.cooldown_start = strtoull(data["current.cooldown_start"].c_str(), NULL, 10);
+    current.respawns       = strtoul(data["current.respawns"].c_str(), NULL, 10);
+    current.start_time     = strtoull(data["current.start_time"].c_str(), NULL, 10);
+    current.respawn_time   = strtoull(data["current.respawn_time"].c_str(), NULL, 10);
+}
