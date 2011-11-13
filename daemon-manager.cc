@@ -167,7 +167,7 @@ bool contains(vector<T> list, T value)
 static vector<user*> user_list_from_config(struct master_config config)
 {
     vector<string> unique_users;
-    for (config_it it = config.runs_as.begin(); it != config.runs_as.end(); it++)
+    for (config_it it = config.can_run_as.begin(); it != config.can_run_as.end(); it++)
         unique_users.push_back(it->first);
     for (config_it it = config.manages.begin(); it != config.manages.end(); it++)
         unique_users.push_back(it->first);
@@ -195,8 +195,8 @@ static vector<user*> user_list_from_config(struct master_config config)
 
     foreach(user *u, user_list) {
         u->can_run_as_uid[u->uid] = true; // You can always run as yourself, however ill-advised.
-        if (config.runs_as.find(u->name) != config.runs_as.end()) {
-            for (config_list_it name = config.runs_as[u->name].begin(); name != config.runs_as[u->name].end(); name++) {
+        if (config.can_run_as.find(u->name) != config.can_run_as.end()) {
+            for (config_list_it name = config.can_run_as[u->name].begin(); name != config.can_run_as[u->name].end(); name++) {
                 uid_t uid = uid_from_name(*name);
                 if (uid == (uid_t)-1)
                     log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
@@ -612,8 +612,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
 static void dump_config(struct master_config config)
 {
     log(LOG_DEBUG, "Config:\n");
-    log(LOG_DEBUG, " Runs as:\n");
-    for (config_it it = config.runs_as.begin(); it != config.runs_as.end(); it++) {
+    log(LOG_DEBUG, " Can run as:\n");
+    for (config_it it = config.can_run_as.begin(); it != config.can_run_as.end(); it++) {
         string s = "  "+it->first+": ";
         for (config_list_it lit = it->second.begin(); lit != it->second.end(); lit++) {
             s += " \""+*lit+"\"";

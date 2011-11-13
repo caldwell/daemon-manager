@@ -11,7 +11,7 @@ daemon-manager.conf - Master configuration file for Daemon Manager
 SYNOPSIS
 --------
   # Example configuration file
-  [runs_as]
+  [can_run_as]
   user1: www-data
   # user2 is allowed to launch daemons but only as itself
   user2
@@ -37,13 +37,13 @@ line. Blank lines are ignored.
 
 The file consists of two sections designated by
 
-  [runs_as]
+  [can_run_as]
 
 and
 
   [manages]
 
-The 'runs_as' section identifes which users are allowed to launch daemons. It
+The 'can_run_as' section identifes which users are allowed to launch daemons. It
 looks like this:
 
   bob: mary, bruce, rhonda
@@ -63,7 +63,7 @@ A trailing `:' is also acceptable:
 
 The 'manages' section allows the system administrator to appoint users that
 can start and stop daemons on behalf of other users. It has the same syntax as
-the 'runs_as' section:
+the 'can_run_as' section:
 
   larry: bob, martha
 

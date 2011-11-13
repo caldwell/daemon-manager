@@ -34,7 +34,8 @@ struct master_config parse_master_config(string path)
             string sect = line.substr(1, end-1);
             if (trim(line.substr(end+1)).length()) throw_str("%s:%d Junk at end of section header line", path.c_str(), n);
 
-            if      (sect == "runs_as") section = &config.runs_as;
+            if      (sect == "runs_as" || // The old name, here for backwards compatibility and not documented.
+                     sect == "can_run_as") section = &config.can_run_as;
             else if (sect == "manages") section = &config.manages;
             else throw_str("%s:%d Illegal section \"%s\"", path.c_str(), n, sect.c_str());
             continue;

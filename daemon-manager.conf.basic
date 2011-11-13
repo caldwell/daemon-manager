@@ -1,6 +1,6 @@
 # See daemon-manager.conf(5) for details on the format of this file.
 
-[runs_as]
+[can_run_as]
 # List all the users you want to be able to launch daemons in a list here
 # followed by an optional comma separated list of users they are allowed to
 # start their daemons as.

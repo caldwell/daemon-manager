@@ -9,7 +9,7 @@
 using namespace std;
 
 struct master_config {
-    map<string,vector<string> > runs_as;
+    map<string,vector<string> > can_run_as;
     map<string,vector<string> > manages;
 };
 
