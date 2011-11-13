@@ -7,6 +7,7 @@
 #include "strprintf.h"
 #include "log.h"
 #include "posix-util.h"
+#include "foreach.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,6 +39,18 @@ void daemon::load_config()
     if (st.st_mtime == config_file_stamp) return;
 
     map<string,string> cfg = parse_daemon_config(config_file);
+
+    // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
+    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile" };
+    typedef pair<string,string> str_pair;
+    foreach(str_pair c, cfg) {
+        foreach(const char *key, valid_keys) {
+            if (c.first == key) goto found;
+        }
+        log(LOG_WARNING, "Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
+      found:;
+    }
+
 
     config.working_dir = cfg.count("dir") ? cfg["dir"] : "/";
     pwent pw = pwent(cfg.count("user") ? cfg["user"] : user->name);
