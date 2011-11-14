@@ -160,7 +160,6 @@ void daemon::start(bool respawn)
         map<string,string> ENV;
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
-        ENV["SHELL"]   = config.shell != "" ? config.shell : "/bin/sh";
         ENV["PATH"]    = "/usr/bin:/bin";
         if (config.want_sockfile)
             ENV["SOCK_FILE"] = sock_file();
