@@ -1,3 +1,14 @@
+daemon-manager (0.96) unstable; urgency=low
+
+  * New upstream release:
+
+    * Fix reincarnation bug: don't re-daemonize on reincarnation.
+
+  * Make the postinst, prerm, and init.d scripts use the HUP technique to
+    re-exec the new binary.
+
+ -- David Caldwell <david@porkrind.org>  Sun, 13 Nov 2011 19:59:22 -0800
+
 daemon-manager (0.95) unstable; urgency=low
 
   * New upstream release:
