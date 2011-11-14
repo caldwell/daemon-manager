@@ -1,0 +1,9 @@
+#!/bin/sh
+
+process=$1
+
+# Don't stop daemon manager on normal upgrades--We don't want to lose track of the currently running daemons.
+# Don't worry, the postinst script will restart it cleanly.
+if [ x"$process" = x"remove" -a -x "/etc/init.d/daemon-manager" ]; then
+	invoke-rc.d daemon-manager stop || exit $?
+fi

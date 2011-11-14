@@ -99,31 +99,19 @@ case "$1" in
   status)
        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
        ;;
-  restart|force-reload)
-	#
-	# If the "reload" option is implemented then remove the
-	# 'force-reload' alias
-	#
-	log_daemon_msg "Restarting $DESC" "$NAME"
-	do_stop
-	case "$?" in
-	  0|1)
-		do_start
-		case "$?" in
-			0) log_end_msg 0 ;;
-			1) log_end_msg 1 ;; # Old process is still running
-			*) log_end_msg 1 ;; # Failed to start
-		esac
-		;;
-	  *)
-	  	# Failed to stop
-		log_end_msg 1
-		;;
-	esac
-	;;
+  reload|restart)
+	    log_daemon_msg "Cleanly restarting $DESC" "$NAME"
+        # daemon-manager re-execs iteself on HUP so the restarted version doesn't lose track of the running daemons.
+        if killproc -p $PIDFILE $NAME SIGHUP; then
+ 			log_end_msg 0
+        else
+            # It wasn't actually running.
+ 			log_end_msg 1
+        fi
+        ;;
   *)
 	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
-	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|reload}" >&2
 	exit 3
 	;;
 esac
