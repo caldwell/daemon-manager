@@ -52,7 +52,7 @@ That line means that 'bob' is allowed to start the demons in his home
 directory and have them run as 'bob', 'mary', 'bruce', or 'rhonda'.  Users
 are always allowed to launch daemons as themselves so there is no need to list
 them on the right hand side. If you only want to allow 'bob' to launch
-daemons as himself then just list him on his own line in the 'run_as'
+daemons as himself then just list him on his own line in the 'can_run_as'
 section:
 
   bob
