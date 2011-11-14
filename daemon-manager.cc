@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <list>
 #include <algorithm>
 #include <err.h>
 #include <errno.h>
@@ -25,6 +26,8 @@
 #include "uniq.h"
 #include "options.h"
 #include "foreach.h"
+#include "stringutil.h"
+#include "json-escape.h"
 
 using namespace std;
 
@@ -39,14 +42,21 @@ static void create_pidfile(string pidfile);
 static vector<user*> user_list_from_config(struct master_config config);
 static vector<class daemon*>empty_daemon_list(0);
 static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class daemon*>existing = empty_daemon_list);
+static void import_daemons(vector<class daemon*> daemons, FILE *f);
+static void export_daemons(vector<class daemon*> daemons, FILE *f);
 static void autostart(vector<class daemon*> daemons);
 static void select_loop(vector<user*> users, vector<class daemon*> daemons);
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons);
 static string do_command(string command_line, user *user, vector<class daemon*> *daemons);
 static void dump_config(struct master_config config);
 
+static char *daemon_manager_exe_path;
+static char **daemon_manager_argv;
 int main(int argc, char **argv)
 {
+    daemon_manager_exe_path = argv[0];
+    daemon_manager_argv = argv;
+
     string config_path("/etc/daemon-manager/daemon-manager.conf");
     int verbose = 0;
     bool foreground = false;
@@ -85,6 +95,21 @@ int main(int argc, char **argv)
     vector<user*> users = user_list_from_config(config);
 
     vector<class daemon*> daemons = load_daemons(users);
+
+    char *fd_str;
+    if (fd_str = getenv("dm_running_daemons_fd")) {
+        FILE *import = fdopen(atoi(fd_str), "r+");
+        try {
+            if (!import) throw_strerr("fdopen() failed");
+            unsetenv("dm_running_daemons_fd");
+            import_daemons(daemons, import);
+        } catch(std::exception &e) {
+            log(LOG_ERR, "Couldn't import old state: %s\n", e.what());
+            log(LOG_ERR, "Daemons have all been forgotten--kill the pids manually. Sorry.");
+        }
+        if (import)
+            fclose(import);
+    }
 
     autostart(daemons);
 
@@ -142,7 +167,7 @@ bool contains(vector<T> list, T value)
 static vector<user*> user_list_from_config(struct master_config config)
 {
     vector<string> unique_users;
-    for (config_it it = config.runs_as.begin(); it != config.runs_as.end(); it++)
+    for (config_it it = config.can_run_as.begin(); it != config.can_run_as.end(); it++)
         unique_users.push_back(it->first);
     for (config_it it = config.manages.begin(); it != config.manages.end(); it++)
         unique_users.push_back(it->first);
@@ -155,20 +180,23 @@ static vector<user*> user_list_from_config(struct master_config config)
     map<string,user*> users;
     vector<user*> user_list;
 
-    foreach(string u, unique_users) {
+    foreach(string name, unique_users) {
+        class user *u=NULL;
         try {
-            user_list.push_back(users[u] = new user(u));
-            users[u]->create_dirs();
-            users[u]->open_server_socket();
+            u = new user(name);
+            u->create_dirs();
+            u->open_server_socket();
+            user_list.push_back(users[name] = u);
         } catch (std::exception &e) {
-            log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
+            log(LOG_WARNING, "Ignoring %s: %s\n", name.c_str(), e.what());
+            delete u;
         }
     }
 
     foreach(user *u, user_list) {
         u->can_run_as_uid[u->uid] = true; // You can always run as yourself, however ill-advised.
-        if (config.runs_as.find(u->name) != config.runs_as.end()) {
-            for (config_list_it name = config.runs_as[u->name].begin(); name != config.runs_as[u->name].end(); name++) {
+        if (config.can_run_as.find(u->name) != config.can_run_as.end()) {
+            for (config_list_it name = config.can_run_as[u->name].begin(); name != config.can_run_as[u->name].end(); name++) {
                 uid_t uid = uid_from_name(*name);
                 if (uid == (uid_t)-1)
                     log(LOG_ERR, "%s can't run as non-existant user \"%s\"\n", u->name.c_str(), name->c_str());
@@ -223,9 +251,136 @@ static void autostart(vector<class daemon*> daemons)
 {
     // Now start all the daemons marked "autostart"
     foreach(class daemon *d, daemons)
-        if (d->config.autostart)
+        if (d->config.autostart && d->current.state == stopped)
             try { d->start(); }
             catch(std::exception &e) { log(LOG_ERR, "Couldn't start %s: %s\n", d->id.c_str(), e.what()); }
+}
+
+static void kill_unimported(map<string,string> data)
+{
+    if (data.find("current.pid") != data.end() &&
+        data.find("current.state") != data.end() &&
+        data["current.state"] == "running") {
+        unsigned int pid  = strtoul(data["current.pid"].c_str(), NULL, 10);
+        log(LOG_NOTICE, "Killing PID %d from old daemon \"%s\": unimportable running daemon\n", pid, data["id"].c_str());
+        kill(pid, SIGTERM);
+    } else
+        log(LOG_NOTICE, "Forgetting %s daemon \"%s\"\n", data["current.state"].c_str(), data["id"].c_str());
+}
+
+
+
+pair<string,string> parse_json_key_value(string line)
+{
+#define inc() if (++c == line.end()) throw_str("unterminated string");
+    pair<string,string> p;
+    string::const_iterator c = line.begin();
+    for (int pi=0; pi<2; pi++) {
+        while (*c != '\"')
+            inc();
+        inc();
+        string::const_iterator start = c;
+        char last=0;
+        while (*c != '\"' || last == '\\') {
+            last = *c;
+            inc();
+        }
+        string::const_iterator end = c;
+        inc();
+        if (*c == ':')
+            inc();
+
+        if (pi == 0) p.first  = json_unescape(string(start, end));
+        else         p.second = json_unescape(string(start, end));
+    }
+    //log(LOG_INFO, "Parsing JSON line: key={{%s}} value={{%s}}\n", p.first.c_str(), p.second.c_str());
+    return p;
+#undef inc
+}
+
+static void import_daemons(vector<class daemon*> daemons, FILE *f)
+{
+    map<string, class daemon*> daemon_by_config;
+    foreach(class daemon *d, daemons)
+        daemon_by_config[d->config_file] = d;
+
+    char buffer[10000];
+    int red = fread(buffer, 1, sizeof(buffer), f);
+    fseek(f, 0, SEEK_SET);
+    log(LOG_INFO, "Importing: %.*s\n----\n", red, buffer);
+
+
+    int version;
+    fscanf(f, "{ \"version\": %d\n", &version) == 1 || throw_str("Missing version");
+    version == 1 || throw_str("Version == %d and not 1", version);
+    fscanf(f, " \"daemons\": [\n");
+    char line[10000];
+    while (fgets(line, sizeof(line), f))
+        if (line[strspn(line, " ")] == '{') {
+            map<string,string> data;
+            while (fgets(line, sizeof(line), f))
+                if (line[strspn(line, " ")] != '}')
+                    data.insert(parse_json_key_value(line));
+                else {
+
+                    if (daemon_by_config[data["config_file"]]) {
+                        try {
+                            daemon_by_config[data["config_file"]]->from_map(data);
+                            log(LOG_INFO, "Reimport \"%s\" successfully.\n", daemon_by_config[data["config_file"]]->id.c_str());
+                        } catch(std::exception &e) {
+                            log(LOG_ERR, "Couldn't reimport \"%s\": %s\n", daemon_by_config[data["config_file"]]->id.c_str(), e.what());
+                            kill_unimported(data);
+                        }
+                    } else
+                        kill_unimported(data);
+
+                    break;
+                }
+        }
+}
+
+static void export_daemons(vector<class daemon*> daemons, FILE *f)
+{
+    fprintf(f, "{\n"
+               "    \"version\": 1,\n");
+    fprintf(f, "    \"daemons\": [\n");
+    list<string> daemonrep;
+    foreach(class daemon *d, daemons) {
+        map<string,string> dmap = d->to_map();
+        list<string> keyval;
+        typedef pair<string,string> str_pair;
+        foreach(str_pair dr, dmap)
+            keyval.push_back(strprintf("            \"%s\": \"%s\"", json_escape(dr.first).c_str(), json_escape(dr.second).c_str()));
+        daemonrep.push_back(strprintf("        {\n"
+                                      "%s\n"
+                                      "        }", join(keyval, ",\n").c_str()));
+    }
+    fprintf(f, "%s\n", join(daemonrep, ",\n").c_str());
+    fprintf(f, "    ]\n"
+               "}\n");
+}
+
+static void reincarnate(vector<class daemon*> daemons)
+{
+    FILE *f = NULL;
+    try {
+        char Template[] = "/tmp/daemon-manager-running-daemons.XXXXXXXXXXXX";
+        int fd = mkstemp(Template);
+        if (fd == -1) throw_strerr("mkstemp() failed [%s]", Template);
+        unlink(Template);
+        FILE *f = fdopen(fd, "w+");
+        export_daemons(daemons, f);
+        fflush(f);
+        lseek(fd, 0, SEEK_SET);
+        setenv("dm_running_daemons_fd", strprintf("%d", fd).c_str(), 1) == 0 || throw_strerr("setenv() failed");
+        log(LOG_INFO, "Re-execing ourselves...\n");
+        execv(daemon_manager_exe_path, daemon_manager_argv);
+        throw_strerr("exec() failed");
+    } catch(std::exception &e) {
+        if (f)
+            fclose(f);
+        log(LOG_ERR, "Couldn't re-exec ourselves: %s\n", e.what());
+    }
 }
 
 static void distribute_signal_to_children(int sig)
@@ -240,11 +395,19 @@ static void handle_sig_child(int)
     log(LOG_DEBUG, "SIGCHLD\n");
 }
 
+bool hup_two_three_four;
+static void handle_sig_hup(int)
+{
+    hup_two_three_four = true;
+    log(LOG_DEBUG, "SIGHUP\n");
+}
+
 static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 {
     signal(SIGCHLD, handle_sig_child);
     signal(SIGTERM, distribute_signal_to_children);
     signal(SIGINT,  distribute_signal_to_children);
+    signal(SIGHUP,  handle_sig_hup);
     signal(SIGPIPE, SIG_IGN);
     typedef map<int,user*> fd_map;
     typedef map<int,user*>::iterator fd_map_it;
@@ -256,6 +419,11 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         listeners[u->command_socket] = u;
 
     while (1) {
+        if (hup_two_three_four) {
+            hup_two_three_four = false;
+            reincarnate(daemons);
+        }
+
         struct pollfd fd[listeners.size() + clients.size()];
         int nfds = 0;
 
@@ -338,7 +506,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             if (d->current.state == coolingdown && d->cooldown_remaining() == 0) {
                 log(LOG_INFO, "Cooldown time has arrived for %s\n", d->id.c_str());
                 try { d->start(true); }
-                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn %s: %s\n", d->id.c_str(), e.what()); }
+                catch(std::exception &e) { log(LOG_ERR, "Couldn't respawn cooled-down %s: %s\n", d->id.c_str(), e.what()); }
             }
     }
 }
@@ -407,7 +575,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
                               d->current.respawns,
                               elapsed(d->cooldown_remaining()).c_str(),
                               elapsed(d->current.pid ? time(NULL) - d->current.respawn_time : 0).c_str(),
-                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str());
+                              elapsed(d->current.pid ? time(NULL) - d->current.start_time   : 0).c_str())
+                + d->get_and_clear_whines();
         return "OK: " + resp;
     }
 
@@ -417,7 +586,10 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
             return "OK: No new daemons found.\n";
         daemons->insert(daemons->end(), new_daemons.begin(), new_daemons.end());
         autostart(new_daemons);
-        return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n";
+        string fine_whines;
+        foreach(class daemon *d, new_daemons)
+            fine_whines += d->get_and_clear_whines();
+        return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n" + fine_whines;
     }
 
     vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
@@ -429,6 +601,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
     else throw_str("bad command \"%s\"", cmd.c_str());
+    if (!daemon->whine_list.empty())
+        return "OK: " + daemon->get_and_clear_whines();
   } catch (std::exception &e) {
       return string("ERR: ") + e.what() + "\n";
   }
@@ -438,8 +612,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
 static void dump_config(struct master_config config)
 {
     log(LOG_DEBUG, "Config:\n");
-    log(LOG_DEBUG, " Runs as:\n");
-    for (config_it it = config.runs_as.begin(); it != config.runs_as.end(); it++) {
+    log(LOG_DEBUG, " Can run as:\n");
+    for (config_it it = config.can_run_as.begin(); it != config.can_run_as.end(); it++) {
         string s = "  "+it->first+": ";
         for (config_list_it lit = it->second.begin(); lit != it->second.end(); lit++) {
             s += " \""+*lit+"\"";

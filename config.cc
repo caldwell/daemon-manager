@@ -4,6 +4,7 @@
 #include "strprintf.h"
 #include "uniq.h"
 #include "stringutil.h"
+#include "log.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -34,8 +35,13 @@ struct master_config parse_master_config(string path)
             string sect = line.substr(1, end-1);
             if (trim(line.substr(end+1)).length()) throw_str("%s:%d Junk at end of section header line", path.c_str(), n);
 
-            if      (sect == "runs_as") section = &config.runs_as;
-            else if (sect == "manages") section = &config.manages;
+            if (sect == "runs_as") {
+                sect = "can_run_as";
+                log(LOG_WARNING, "%s:%d [runs_as] is now called [can_run_as]. Please fix this, it will break eventually.\n", path.c_str(), n);
+            }
+
+            if      (sect == "can_run_as") section = &config.can_run_as;
+            else if (sect == "manages")    section = &config.manages;
             else throw_str("%s:%d Illegal section \"%s\"", path.c_str(), n, sect.c_str());
             continue;
         }

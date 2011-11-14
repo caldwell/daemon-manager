@@ -1,0 +1,44 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: "[run_as] should be [can_run_as]"
+desc: |-
+  Jim suggested it, I think it's a good idea.
+  Possibly think about backward compatibility.
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :closed
+disposition: :fixed
+creation_time: 2011-07-05 05:48:29.647458 Z
+references: []
+
+id: 751f3894b4c1684da95fc2a24dd067eeb4216311
+log_events: 
+- - 2011-07-05 05:48:29.647690 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
+- - 2011-11-13 23:28:57.748516 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit 720908ffc9e831c7e6449f41008ea93fed555fa4
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 15:21:24 2011 -0800
+    
+        runs_as -> can_run_as which reads better and makes the config less confusing (hopefully).
+    
+        [runs_as] remains for backwards compatibility but is not documented.
+    
+        Closes: 751f3894b4
+- - 2011-11-13 23:29:19.788933 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit b1ce8038359633b4c29252e2f1bb93fcb9ebe53d
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 15:28:32 2011 -0800
+    
+        [config.cc] Instead of silently accepting the old [runs_as], complain loudly in the log.
+        
+        Re: 751f3894b4

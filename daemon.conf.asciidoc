@@ -65,7 +65,7 @@ CONFIGURATION OPTIONS
   Use this option to specify which user the daemon should be run as. By default
   users are only allowed to start daemons as themselves. The system
   administrator can allow a user to run as another user by adding to the
-  'run_as' section of the 'daemon-manager.conf(5)' file.
+  'can_run_as' section of the 'daemon-manager.conf(5)' file.
 
 *output*::
 
@@ -104,7 +104,7 @@ CONFIGURATION OPTIONS
   The rationale is that if there are a large number of FastCGI daemons in the
   system then it is convenient to have their sockets organized and guess-able
   just by knowing the daemon-id (obtained from 'dmctl(1)') and the system's
-  run_as policy (as defined in 'daemon-manager.conf(5)').
+  can_run_as policy (as defined in 'daemon-manager.conf(5)').
 
 SEE ALSO
 --------

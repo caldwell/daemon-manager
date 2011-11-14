@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -33,7 +34,7 @@ int main(int argc, char **argv)
     options o(argc, argv);
     if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
-    if (o.bad_args() || o.args.size() < 1 || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+    if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
 
     user *me;
     try {
@@ -47,7 +48,7 @@ int main(int argc, char **argv)
         errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
     }
 
-    string command = o.args[0];
+    string command = o.args.size() >= 1 ? o.args[0] : "status";
     if (o.args.size() == 2)
         command += string(" ") + canonify(o.args[1], me);
 
@@ -75,15 +76,19 @@ static string do_command(string command, user *me)
     if (got < 0)  err(1, "Poll failed");
     if (got == 0) err(1, "Poll timed out.");
 
-    char buf[1000];
-    int red = read(me->command_socket, buf, sizeof(buf)-1);
-    if (red < 0)   err(1, "No response from daemon-manager");
-    if (red == 0) errx(1, "No response from daemon-manager.");
+    string out;
+    while (1) {
+        char buf[256];
+        int red = read(me->command_socket, buf, sizeof(buf)-1);
+        if (red == 0 || red < 0 && errno == EAGAIN) break; // done.
+        if (red < 0)   err(1, "No response from daemon-manager");
+        out.append(buf, red);
+    }
+    if (out.empty()) errx(1, "No response from daemon-manager.");
 
-    buf[red] = '\0';
-    if (strcmp(buf, "OK\n") == 0)     return string("");
-    if (strncmp(buf, "OK: ", 4) == 0) return string(buf+4);
-    throw std::runtime_error(buf);
+    if (out == "OK\n")              return string("");
+    if (out.substr(0, 4) == "OK: ") return out.substr(4);
+    throw std::runtime_error(out);
 }
 
 static string canonify(string id, user *u)
@@ -143,7 +148,7 @@ SYNOPSIS
 DESCRIPTION
 -----------
 *dmctl* allows the user to communicate and interact with the
-L<daemon-manager(1)> daemon.
+L<daemon-manager(1)> daemon. If no command is given, "*status*" is assumed.
 
 COMMANDS
 --------

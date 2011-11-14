@@ -1,0 +1,33 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Add ability to upgrade without losing track of daemons.
+desc: |-
+  The idea is that we exec() our new version so that we keep all of the child processes.
+  The old code has to save its state and feed it to the new code somehow.
+  It should probably do this in response to SIGHUP.
+  Since it's re-exec()ing itself it'll also work for reloading its master config files.
+type: :feature
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :closed
+disposition: :fixed
+creation_time: 2011-07-05 05:52:20.198518 Z
+references: []
+
+id: 2f14ff97a47bb7617e62d607e6a0d7578e774d07
+log_events: 
+- - 2011-07-05 05:52:20.198762 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
+- - 2011-11-13 22:33:18.886211 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit f3810ae465b749282fb77cde24a4a4036c833bbd
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 03:43:59 2011 -0800
+    
+        [daemon-manager.cc] Re-exec ourselves on SIGHUP, saving our state in a temp file (json format).
+        
+        Closes: 2f14ff97a47

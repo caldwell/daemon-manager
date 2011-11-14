@@ -7,6 +7,7 @@
 #include "strprintf.h"
 #include "log.h"
 #include "posix-util.h"
+#include "foreach.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,12 +33,37 @@ daemon::daemon(string config_file, class user *user)
     load_config();
 }
 
+string daemon::get_and_clear_whines()
+{
+    string fine_whines;
+    if (!whine_list.empty()) {
+        foreach(string whine, whine_list)
+            fine_whines += whine;
+        whine_list.clear();
+    }
+    return fine_whines;
+}
+
 void daemon::load_config()
 {
     struct stat st = permissions::check(config_file, 0113, user->uid);
     if (st.st_mtime == config_file_stamp) return;
 
     map<string,string> cfg = parse_daemon_config(config_file);
+
+    // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
+    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile", "shell" };
+    typedef pair<string,string> str_pair;
+    foreach(str_pair c, cfg) {
+        foreach(const char *key, valid_keys)
+            if (c.first == key) goto found;
+        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
+          log(LOG_WARNING, "%s", warning.c_str());
+          whine_list.push_back("Warning: "+warning);
+        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
+      found:;
+    }
+
 
     config.working_dir = cfg.count("dir") ? cfg["dir"] : "/";
     pwent pw = pwent(cfg.count("user") ? cfg["user"] : user->name);
@@ -77,13 +103,16 @@ void daemon::start(bool respawn)
     int child = fork();
     if (child == -1) throw_strerr("Fork failed\n");
     if (child) {
+        // Parent
         close(fd[1]);
         char err[1000]="";
         int red = read(fd[0], &err, sizeof(err));
         close(fd[0]);
-        if(red > 0)
+        if(red > 0) {
+            this->reap();
             throw runtime_error(string(err));
-        current.pid = child; // Parent
+        }
+        current.pid = child;
         log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
         current.respawn_time = time(NULL);
         if (respawn)
@@ -128,17 +157,18 @@ void daemon::start(bool respawn)
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
-        vector<string> elist;
-        elist.push_back("HOME=" + user->homedir);
-        elist.push_back("LOGNAME=" + user->name);
-        elist.push_back("SHELL=/bin/sh");
-        elist.push_back("PATH=/usr/bin:/bin");
+        map<string,string> ENV;
+        ENV["HOME"]    = user->homedir;
+        ENV["LOGNAME"] = user->name;
+        ENV["PATH"]    = "/usr/bin:/bin";
         if (config.want_sockfile)
-            elist.push_back("SOCK_FILE=" + sock_file());
-        const char *env[elist.size()+1];
-        for (size_t i=0; i<elist.size(); i++)
-            env[i] = elist[i].c_str();
-        env[elist.size()] = NULL;
+            ENV["SOCK_FILE"] = sock_file();
+        string envs[ENV.size()], *es = envs;       // Storage for the full env c++ strings.
+        const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
+        typedef pair<string,string> pss;
+        foreach(pss ep, ENV)
+            *e++ = (*es++ = ep.first + "=" + ep.second).c_str();
+        *e = NULL;
         execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
@@ -188,4 +218,45 @@ time_t daemon::cooldown_remaining()
 bool daemon_compare(class daemon *a, class daemon *b)
 {
     return a->config_file < b->config_file;
+}
+
+map<string,string> daemon::to_map()
+{
+    map <string,string> data;
+    data["id"]                     = id;
+    data["name"]                   = name;
+    data["config_file"]            = config_file;
+    data["user"]                   = user->name;
+    data["current.pid"]            = strprintf("%d", current.pid);
+    data["current.state"]          = _state_str[current.state];
+    data["current.cooldown"]       = strprintf("%lld", (long long)current.cooldown);
+    data["current.cooldown_start"] = strprintf("%lld", (long long)current.cooldown_start);
+    data["current.respawns"]       = strprintf("%zd", current.respawns);
+    data["current.start_time"]     = strprintf("%lld", (long long)current.start_time);
+    data["current.respawn_time"]   = strprintf("%lld", (long long)current.respawn_time);
+    return data;
+}
+
+#include "lengthof.h"
+void daemon::from_map(map<string,string> data)
+{
+    if (id          != data["id"])          throw_str("ids do not match: \"%s\" vs \"%s\"!", id.c_str(), data["id"].c_str());
+    if (name        != data["name"])        throw_str("names do not match: \"%s\" vs \"%s\"!", name.c_str(), data["name"].c_str());
+    if (config_file != data["config_file"]) throw_str("config_files do not match: \"%s\" vs \"%s\"!", config_file.c_str(), data["config_file"].c_str());
+    if (user->name  != data["user"])        throw_str("users do not match: \"%s\" vs \"%s\"!", user->name.c_str(), data["user"].c_str());
+
+    for (size_t current_state = 0; current_state < lengthof(_state_str); current_state++)
+        if (_state_str[current_state] == data["current.state"]) {
+            current.state = (run_state) current_state;
+            goto found;
+        }
+    throw_str("current.state \"%s\" is invalid!", data["current.state"].c_str());
+  found:
+
+    current.pid            = strtoul(data["current.pid"].c_str(), NULL, 10);
+    current.cooldown       = strtoull(data["current.cooldown"].c_str(), NULL, 10);
+    current.cooldown_start = strtoull(data["current.cooldown_start"].c_str(), NULL, 10);
+    current.respawns       = strtoul(data["current.respawns"].c_str(), NULL, 10);
+    current.start_time     = strtoull(data["current.start_time"].c_str(), NULL, 10);
+    current.respawn_time   = strtoull(data["current.respawn_time"].c_str(), NULL, 10);
 }

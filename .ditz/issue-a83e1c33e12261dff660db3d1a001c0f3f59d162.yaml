@@ -1,0 +1,63 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Missing home directory cases super fast polling (bad fs in poll)
+desc: |-
+  This code:
+          try {
+              user_list.push_back(users[u] = new user(u));
+              users[u]->create_dirs();
+              users[u]->open_server_socket();
+          } catch (std::exception &e) {
+              log(LOG_WARNING, "Ignoring %s: %s\n", u.c_str(), e.what());
+          }
+  Is at fault. If open_server_socket() throws then the user is already in the user list.
+  Later when we go through the list the we try to use the socket which isn't open and has
+  random crap for the filehandle. This causes poll to fail and the main loop ends up polling
+  with no delay, taking 100% of the CPU.
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :closed
+disposition: :fixed
+creation_time: 2011-09-13 12:01:19.204091 Z
+references: []
+
+id: a83e1c33e12261dff660db3d1a001c0f3f59d162
+log_events: 
+- - 2011-09-13 12:01:19.204255 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
+- - 2011-11-13 23:02:34.144922 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit 08a15ff744117d682bc50baf4afc1433d624222e
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:54:47 2011 -0800
+    
+        [user.cc] Don't let command_socket be uninitialized.
+    
+        Re: a83e1c33e1
+- - 2011-11-13 23:02:59.231748 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    commit ba59e46bf390cb3be675f655c55e643bacc26f23
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:55:39 2011 -0800
+    
+        [user] Add a desstructor that closes the command_socket.
+    
+        Re: a83e1c33e1
+- - 2011-11-13 23:03:17.000764 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit 9b80ad29cb3a56fbd8d474e977a809780086bd6e
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Nov 13 14:58:47 2011 -0800
+    
+        [daemon-manager.cc] Fix users with invalid home directories staying in the user list and screwing up poll() later on.
+        
+        Closes: a83e1c33e1

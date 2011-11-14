@@ -22,6 +22,7 @@ class user {
 
     user(string name);
     user(uid_t uid);
+    ~user();
     void create_dirs();
     void open_server_socket();
     void open_client_socket();
