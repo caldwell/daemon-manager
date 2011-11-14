@@ -26,7 +26,8 @@ daemon-manager (0.9)
 
   * Print elapsed times better in "dmctl status".
 
-  * Fix dmclt to work when abbreviated daemon name was the same as the user name.
+  * Fixed dmclt to work when abbreviated daemon name was the same as the
+    user name.
 
   * Made some error messages clearer.
 
