@@ -1,6 +1,7 @@
 //  Copyright (c) 2011 David Caldwell,  All Rights Reserved.
 
 #include <string>
+#include <stdlib.h>
 #include "json-escape.h"
 #include "strprintf.h"
 
