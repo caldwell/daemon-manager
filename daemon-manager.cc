@@ -86,7 +86,9 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (!foreground)
+    bool reincarnating = !!getenv("dm_running_daemons_fd");
+
+    if (!foreground && !reincarnating)
         daemonize();
 
     if (pidfile != "")
@@ -96,9 +98,8 @@ int main(int argc, char **argv)
 
     vector<class daemon*> daemons = load_daemons(users);
 
-    char *fd_str;
-    if (fd_str = getenv("dm_running_daemons_fd")) {
-        FILE *import = fdopen(atoi(fd_str), "r+");
+    if (reincarnating) {
+        FILE *import = fdopen(atoi(getenv("dm_running_daemons_fd")), "r+");
         try {
             if (!import) throw_strerr("fdopen() failed");
             unsetenv("dm_running_daemons_fd");
