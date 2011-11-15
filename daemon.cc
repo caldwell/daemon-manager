@@ -27,7 +27,7 @@ daemon::daemon(string config_file, class user *user)
     current = (struct current) { 0,stopped,0,0,0,0,0 };
     const char *stem = basename((char*)config_file.c_str());
     const char *ext = strstr(stem, ".conf");
-    name = string(stem, ext ? ext - stem : strlen(stem));
+    name = string(stem, ext ? (size_t)(ext - stem) : strlen(stem));
     id = user->name + "/" + name;
 
     load_config();
