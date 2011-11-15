@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <err.h>
 #include <errno.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/un.h>
