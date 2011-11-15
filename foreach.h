@@ -2,6 +2,12 @@
 #ifndef __FOREACH_H__
 #define __FOREACH_H__
 
+#if __cplusplus >= 201103L || defined(__clang__) && __clang_major__ >= 3
+
+#define foreach(var, container) for (var : container)
+
+#else
+
 #include <stdlib.h>
 
 template<class T> typename T::const_iterator __begin(T &x)       { return x.begin(); }
@@ -20,5 +26,7 @@ template<class T> T *__end(T x[], size_t len) { return &x[len/sizeof(*x)]; }
         if (bool __once = false) {} else                                \
         if (!(__break = true)) {} else                                  \
         for (var = *_var_it; !__once; __once = true, __break=false)
+
+#endif
 
 #endif /* __FOREACH_H__ */
