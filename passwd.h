@@ -3,6 +3,7 @@
 #define __PASSWD_H__
 
 #include <string>
+#include <sys/types.h>
 
 int uid_from_name(std::string name);
 std::string name_from_uid(int uid);
