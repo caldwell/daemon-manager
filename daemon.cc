@@ -165,11 +165,13 @@ void daemon::start(bool respawn)
         ENV["PATH"]    = "/usr/bin:/bin";
         if (config.want_sockfile)
             ENV["SOCK_FILE"] = sock_file();
-        string envs[ENV.size()], *es = envs;       // Storage for the full env c++ strings.
+        list<string> envs;                         // Storage for the full env c++ strings.
         const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
         typedef pair<string,string> pss;
-        foreach(pss ep, ENV)
-            *e++ = (*es++ = ep.first + "=" + ep.second).c_str();
+        foreach(pss ep, ENV) {
+            envs.push_front(ep.first + "=" + ep.second);
+            *e++ = envs.front().c_str();
+        }
         *e = NULL;
         execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
