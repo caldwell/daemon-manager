@@ -77,7 +77,7 @@ void user::open_server_socket()
 
     command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
     if (command_socket < 0) throw_strerr("socket() failed");
-    fcntl(command_socket, F_SETFD, 1)                           == -1 && throw_strerr("Couldn't set socket to close on exec");
+    fcntl(command_socket, F_SETFD, FD_CLOEXEC)                  == -1 && throw_strerr("Couldn't set socket to close on exec");
     bind(command_socket, (struct sockaddr*) &addr, sizeof(sa_family_t) + strlen(addr.sun_path) + 1)
                                                                  == 0 || throw_strerr("Binding to socket %s failed", addr.sun_path);
     listen(command_socket, 1)                                    == 0 || throw_strerr("listen(%s) failed", addr.sun_path);

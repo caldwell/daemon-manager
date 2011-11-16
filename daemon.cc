@@ -99,8 +99,8 @@ void daemon::start(bool respawn)
 
     int fd[2];
     if (pipe(fd) <0) throw_strerr("Couldn't pipe");
-    fcntl(fd[0], F_SETFD, 1);
-    fcntl(fd[1], F_SETFD, 1);
+    fcntl(fd[0], F_SETFD, FD_CLOEXEC);
+    fcntl(fd[1], F_SETFD, FD_CLOEXEC);
     int child = fork();
     if (child == -1) throw_strerr("Fork failed\n");
     if (child) {
