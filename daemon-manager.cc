@@ -416,6 +416,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 
     map<int,user*> listeners;
     map<int,user*> clients;
+    listeners.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
 
     foreach(class user *u, users)
         listeners[u->command_socket] = u;
