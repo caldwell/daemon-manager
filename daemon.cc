@@ -107,7 +107,7 @@ void daemon::start(bool respawn)
         // Parent
         close(fd[1]);
         char err[1000]="";
-        int red = read(fd[0], &err, sizeof(err));
+        int red = read(fd[0], &err, sizeof(err)-1);
         close(fd[0]);
         if(red > 0) {
             this->reap();
