@@ -186,6 +186,8 @@ void daemon::stop()
         kill(current.pid, SIGTERM);
         current.state = stopping;
     }
+    if (current.state == coolingdown)
+        current.state = stopped;
     current.respawns = 0;
 }
 
