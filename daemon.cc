@@ -91,6 +91,18 @@ string daemon::sock_file()
     return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
 }
 
+
+#include <pwd.h>
+// Just like initgroups() but actually check for errors ಠ_ಠ
+int _initgroups(const char *user, gid_t user_gid)
+{
+    if (!user || !*user) throw_str("Bad username"); // getpwnam() returns something for ""!!
+    struct passwd *pw = getpwnam(user);
+    if (!pw) throw_str("User %s not found", user);
+
+    return initgroups(user, user_gid);
+}
+
 void daemon::start(bool respawn)
 {
     log(LOG_INFO, "Starting %s\n", id.c_str());
@@ -152,7 +164,7 @@ void daemon::start(bool respawn)
                     dash_length, dashes,
                     config.start_command.c_str());
         }
-        initgroups(config.run_as.name.c_str(), config.run_as.gid)
+        _initgroups(config.run_as.name.c_str(), config.run_as.gid)
                                           == -1 && throw_strerr("Couldn't init groups for %s", config.run_as.name.c_str());
         setgid(config.run_as.gid)         == -1 && throw_strerr("Couldn't set gid to %d\n", config.run_as.gid);
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
