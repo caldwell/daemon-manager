@@ -1,3 +1,11 @@
+daemon-manager (0.97)
+
+  * Fix buffer overflow on long error messages.
+
+  * Fix daemons' groups not getting set up right.
+
+ -- David Caldwell <david@porkrind.org>  Sun, 12 Aug 2012 15:18:25 -0700
+
 daemon-manager (0.96)
 
   * Fix reincarnation bug: don't re-daemonize on reincarnation.
