@@ -29,9 +29,9 @@ string name_from_gid(int gid)
     return string(g->gr_name);
 }
 
-pwent::pwent(std::string name) : valid(0)
+pwent::pwent(std::string user) : valid(0)
 {
-    struct passwd *p = getpwnam(name.c_str());
+    struct passwd *p = getpwnam(user.c_str());
     if (!p)
         return;
     valid = true;

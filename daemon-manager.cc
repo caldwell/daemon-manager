@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <err.h>
 #include <errno.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -415,6 +416,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
 
     map<int,user*> listeners;
     map<int,user*> clients;
+    listeners.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
 
     foreach(class user *u, users)
         listeners[u->command_socket] = u;
@@ -466,7 +468,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
                             log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
                             continue;
                         }
-                        fcntl(client, F_SETFD, 1);
+                        fcntl(client, F_SETFD, FD_CLOEXEC);
                         fcntl(client, F_SETFL, O_NONBLOCK);
                         clients[client] = listeners[fd[i].fd];
                     } else if (clients.count(fd[i].fd)) {

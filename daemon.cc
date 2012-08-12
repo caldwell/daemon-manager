@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <algorithm>
@@ -27,7 +28,7 @@ daemon::daemon(string config_file, class user *user)
     current = (struct current) { 0,stopped,0,0,0,0,0 };
     const char *stem = basename((char*)config_file.c_str());
     const char *ext = strstr(stem, ".conf");
-    name = string(stem, ext ? ext - stem : strlen(stem));
+    name = string(stem, ext ? (size_t)(ext - stem) : strlen(stem));
     id = user->name + "/" + name;
 
     load_config();
@@ -90,6 +91,18 @@ string daemon::sock_file()
     return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
 }
 
+
+#include <pwd.h>
+// Just like initgroups() but actually check for errors ಠ_ಠ
+int _initgroups(const char *user, gid_t user_gid)
+{
+    if (!user || !*user) throw_str("Bad username"); // getpwnam() returns something for ""!!
+    struct passwd *pw = getpwnam(user);
+    if (!pw) throw_str("User %s not found", user);
+
+    return initgroups(user, user_gid);
+}
+
 void daemon::start(bool respawn)
 {
     log(LOG_INFO, "Starting %s\n", id.c_str());
@@ -98,15 +111,15 @@ void daemon::start(bool respawn)
 
     int fd[2];
     if (pipe(fd) <0) throw_strerr("Couldn't pipe");
-    fcntl(fd[0], F_SETFD, 1);
-    fcntl(fd[1], F_SETFD, 1);
+    fcntl(fd[0], F_SETFD, FD_CLOEXEC);
+    fcntl(fd[1], F_SETFD, FD_CLOEXEC);
     int child = fork();
     if (child == -1) throw_strerr("Fork failed\n");
     if (child) {
         // Parent
         close(fd[1]);
         char err[1000]="";
-        int red = read(fd[0], &err, sizeof(err));
+        int red = read(fd[0], &err, sizeof(err)-1);
         close(fd[0]);
         if(red > 0) {
             this->reap();
@@ -151,23 +164,26 @@ void daemon::start(bool respawn)
                     dash_length, dashes,
                     config.start_command.c_str());
         }
-        initgroups(config.run_as.name.c_str(), config.run_as.gid)
+        _initgroups(config.run_as.name.c_str(), config.run_as.gid)
                                           == -1 && throw_strerr("Couldn't init groups for %s", config.run_as.name.c_str());
         setgid(config.run_as.gid)         == -1 && throw_strerr("Couldn't set gid to %d\n", config.run_as.gid);
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
         map<string,string> ENV;
+        ENV.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
         ENV["PATH"]    = "/usr/bin:/bin";
         if (config.want_sockfile)
             ENV["SOCK_FILE"] = sock_file();
-        string envs[ENV.size()], *es = envs;       // Storage for the full env c++ strings.
+        list<string> envs;                         // Storage for the full env c++ strings.
         const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
         typedef pair<string,string> pss;
-        foreach(pss ep, ENV)
-            *e++ = (*es++ = ep.first + "=" + ep.second).c_str();
+        foreach(pss ep, ENV) {
+            envs.push_front(ep.first + "=" + ep.second);
+            *e++ = envs.front().c_str();
+        }
         *e = NULL;
         execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
@@ -185,6 +201,8 @@ void daemon::stop()
         kill(current.pid, SIGTERM);
         current.state = stopping;
     }
+    if (current.state == coolingdown)
+        current.state = stopped;
     current.respawns = 0;
 }
 
