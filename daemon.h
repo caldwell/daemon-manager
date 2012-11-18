@@ -11,6 +11,8 @@
 enum run_state { stopped, stopping, running, coolingdown };
 const std::string _state_str[] = { "stopped", "stopping", "running", "coolingdown" };
 
+const map<string,string> the_empty_map;
+
 class daemon {
   public:
     std::string id;
@@ -51,6 +53,7 @@ class daemon {
     bool exists();
     std::string sock_file();
     std::string state_str() { return _state_str[current.state]; }
+    int fork_setuid_exec(string command, map<string,string> env = the_empty_map);
 
     void start(bool respawn=false);
     void stop();

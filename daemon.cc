@@ -109,6 +109,20 @@ void daemon::start(bool respawn)
 
     load_config(); // Make sure we are up to date.
 
+    current.pid = fork_setuid_exec(config.start_command);
+    log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
+    current.respawn_time = time(NULL);
+    if (respawn)
+        current.respawns++;
+    else
+        current.start_time = time(NULL);
+    current.state = running;
+}
+
+int daemon::fork_setuid_exec(string command, map<string,string> env_in)
+{
+    log(LOG_INFO, "Launching %s\n", command.c_str());
+
     int fd[2];
     if (pipe(fd) <0) throw_strerr("Couldn't pipe");
     fcntl(fd[0], F_SETFD, FD_CLOEXEC);
@@ -125,15 +139,7 @@ void daemon::start(bool respawn)
             this->reap();
             throw runtime_error(string(err));
         }
-        current.pid = child;
-        log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
-        current.respawn_time = time(NULL);
-        if (respawn)
-            current.respawns++;
-        else
-            current.start_time = time(NULL);
-        current.state = running;
-        return;
+        return child;
     }
 
     // Child
@@ -162,7 +168,7 @@ void daemon::start(bool respawn)
                     "> %s\n", dash_length, dashes,
                     ctime(&t), id.c_str(),
                     dash_length, dashes,
-                    config.start_command.c_str());
+                    command.c_str());
         }
         _initgroups(config.run_as.name.c_str(), config.run_as.gid)
                                           == -1 && throw_strerr("Couldn't init groups for %s", config.run_as.name.c_str());
@@ -170,7 +176,7 @@ void daemon::start(bool respawn)
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
-        map<string,string> ENV;
+        map<string,string> ENV = env_in;
         ENV.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
@@ -185,7 +191,7 @@ void daemon::start(bool respawn)
             *e++ = envs.front().c_str();
         }
         *e = NULL;
-        execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
+        execle("/bin/sh", "/bin/sh", "-c", command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
         write(fd[1], e.what(), strlen(e.what())+1/*NULL*/);
