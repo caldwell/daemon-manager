@@ -1,0 +1,20 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Remove sockfile
+desc: |-
+  It hasn't lived up to its potential.
+  In 3 years I've not used it once!
+type: :task
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2013-03-09 09:58:15.571681 Z
+references: []
+
+id: 9cce26e64e0db1bee01bc7f48e5c6241da2a9465
+log_events: 
+- - 2013-03-09 09:58:15.571872 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
