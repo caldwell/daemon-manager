@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Let user override SHELL env var to set which shell gets invoked.
+desc: "This depends on #1583570."
+type: :feature
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2013-03-09 10:04:00.890743 Z
+references: []
+
+id: 2aebc1b8301ad70667ece603ca9514433b050441
+log_events: 
+- - 2013-03-09 10:04:00.890934 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
