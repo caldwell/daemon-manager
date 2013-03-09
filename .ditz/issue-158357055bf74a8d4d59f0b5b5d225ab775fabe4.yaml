@@ -1,0 +1,27 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Add env variables to conf files
+desc: |-
+  You can do it by putting the env vars on the start line, but that is ugly for more than 1.
+  So maybe
+  env MY_ENV=hello
+  or just
+  MY_ENV=hello
+  IE, all uppercase means env var. But then what about lower case ones. I bet it'll turn up.
+  maybe env_MY_ENV=hello
+  or env:MY_ENV=hello
+  That last one looks pretty clean (if a bit XML namespacey).
+type: :feature
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2013-03-09 10:00:54.771395 Z
+references: []
+
+id: 158357055bf74a8d4d59f0b5b5d225ab775fabe4
+log_events: 
+- - 2013-03-09 10:00:54.771601 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
