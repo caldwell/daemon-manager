@@ -11,7 +11,7 @@ daemon.conf - Daemon configuration file for Daemon Manager
 SYNOPSIS
 --------
   # Example conf file:
-  start=./daemon_exe --flags   # Line will be interpretted by /bin/sh
+  start=exec ./daemon --flags  # Line will be interpretted by /bin/sh
   dir=/some/working/dir        # working dir        default: /
   user=nobody                  # Who to run as      default: the user
   output=log                   # "log" or "discard" default: discard
