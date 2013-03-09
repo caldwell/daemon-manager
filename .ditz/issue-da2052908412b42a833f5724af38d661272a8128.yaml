@@ -1,0 +1,23 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Add support to logrotate (without copytruncate)
+desc: |-
+  To do this we'd need an extra fork and a little loop that copies stdin/stderr captures
+  to a log file. That way we can HUP and re-open the log files.
+  Or we could put the log file stuff in the main select loop and do the copies there.
+  Could that cause daemon manager or dmctl to react slowly when there's heavy logging?
+  If everything's ONONBLOCK then it shouldn't, I think... But probably worth testing.
+type: :feature
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2013-03-09 10:18:19.979288 Z
+references: []
+
+id: da2052908412b42a833f5724af38d661272a8128
+log_events: 
+- - 2013-03-09 10:18:19.979484 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
