@@ -1,3 +1,18 @@
+daemon-manager (0.98)
+
+  * Swapped command and daemon-id to match "service" param ordering.
+
+  * Removed sockfile daemon.conf option.
+
+  * Removed canonical name guessing based on prefix. It proved too
+    temperamental and is better served by bash completion (which doesn't
+    exist yet).
+
+  * Added "log" and "tail" commands to view a daemon's log file with
+    $PAGER/less/more/cat and "tail -f", respectively.
+
+ -- David Caldwell <david@porkrind.org>  Sun, 14 Jul 2013 22:39:14 -0700
+
 daemon-manager (0.97)
 
   * Fix buffer overflow on long error messages.
