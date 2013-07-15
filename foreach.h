@@ -1,4 +1,5 @@
 //  Copyright (c) 2010 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __FOREACH_H__
 #define __FOREACH_H__
 
