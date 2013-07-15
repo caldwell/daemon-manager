@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved. -*- c++ -*-
+//  Copyright (c) 2010 David Caldwell <david@porkrind.org> -*- c++ -*-
 #ifndef __POSIX_UTIL_H__
 #define __POSIX_UTIL_H__
 

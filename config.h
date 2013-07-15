@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved. -*- c++ -*-
+//  Copyright (c) 2010 David Caldwell <david@porkrind.org> -*- c++ -*-
 #ifndef __MASTER_CONFIG_H__
 #define __MASTER_CONFIG_H__
 

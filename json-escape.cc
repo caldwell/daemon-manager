@@ -1,4 +1,4 @@
-//  Copyright (c) 2011 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2011 David Caldwell <david@porkrind.org>
 
 #include <string>
 #include <stdlib.h>

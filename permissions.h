@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2010 David Caldwell <david@porkrind.org>
 #ifndef __PERMISSIONS_H__
 #define __PERMISSIONS_H__
 
