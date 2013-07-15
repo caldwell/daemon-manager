@@ -189,6 +189,7 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
         close(fd[1]);
         exit(0);
     }
+    return -1; // Can't happen--just here to shut gcc up.
 }
 
 void daemon::stop()
