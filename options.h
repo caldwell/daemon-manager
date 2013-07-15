@@ -42,7 +42,7 @@ class options {
 //
 // The '--' arg separator is supported. The first one encountered will set it up so that o.get() and
 // o.bad_args() will never go past that point when parsing options. Everything after it will still be
-// available in o.args(). The '--' itself will be removed from the list though.
+// available in o.args(), though the '--' itself will be removed from the list.
 
 #endif /* __OPTIONS_H__ */
 
