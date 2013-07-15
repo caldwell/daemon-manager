@@ -7,8 +7,8 @@ type: :task
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2013-03-09 09:58:15.571681 Z
 references: []
 
@@ -18,3 +18,16 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2013-07-15 05:22:36.827696 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit ad89bf8f526e58e142154395533f43c181533307 (HEAD, refs/heads/master)
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sun Jul 14 22:21:39 2013 -0700
+    
+        [daemon.*] Remove socketfile option.
+    
+        It proved to not be useful (I've not found a single use in 3 years).
+    
+        (Closes: #4)
