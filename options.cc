@@ -14,7 +14,7 @@ class option_match {
             bool operator()(string s) {
                 return s == "--"+lopt ||
                        s.find("--"+lopt+"=") == 0 ||
-                       sopt.size() && s == "-" + sopt;
+                       sopt.size() && s[0] == '-' && s[1] != '-' && s.find(sopt) != s.npos;
             }
 };
 
@@ -42,33 +42,42 @@ bool options::get(string long_opt, char short_opt_char, arg_type type)
         if (o == args.begin()+end)
             break;
 
+        vector<string>::iterator argi;
         string opt = *o;
-        o = args.erase(o);
-        end--;
         bool islong = opt.find("--") == 0;
+        if (!islong) {
+            o->erase(o->find(short_opt),1); // Remove option from bundle.
+            if (o->size() == 1)
+                goto drop_arg;
+            argi = o+1;
+        } else {
+          drop_arg:
+            o = args.erase(o);
+            end--;
+            argi = o;
+        }
+
+#define opt_name()  (islong ? "--"+long_opt : "-"+short_opt)
+
         string val;
         if (type == arg_none) {
-            if (opt.find("=") != opt.npos) {
-                bad.push_back("\""+opt+"\" does not take an argument");
+            if (islong && opt.find("=") != opt.npos) {
+                bad.push_back("\""+opt_name()+"\" does not take an argument");
                 continue;
             }
             val = opt;
         }
         if (type == arg_required) {
-            if (islong) {
-                size_t vo = opt.find('=');
-                if (vo == opt.npos) {
-                    bad.push_back("missing argument for "+opt);
-                    continue;
-                }
+            size_t vo;
+            if (islong && (vo = opt.find('=')) != opt.npos) {
                 val = opt.substr(vo+1);
             } else {
-                if (o == args.begin()+end) {
-                    bad.push_back("missing argument for -"+short_opt);
+                if (argi == args.begin()+end) {
+                    bad.push_back("missing argument for "+opt_name());
                     continue;
                 }
-                val = *o;
-                o = args.erase(o);
+                val = *argi;
+                argi = args.erase(argi);
                 end--;
             }
         }
