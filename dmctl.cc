@@ -48,14 +48,16 @@ int main(int argc, char **argv)
         errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
     }
 
-    string command = o.args.size() >= 1 ? o.args[0] : "status";
-    if (o.args.size() == 2)
-        // The daemon still takes args the old way ("start <daemon-id>").
-        command = o.args[1] + string(" ") + canonify(o.args[0], me);
+    string command = o.args.size() == 0 ? "status"  :
+                     o.args.size() == 1 ? o.args[0] :
+                                          o.args[1];
+    string id = o.args.size() == 2 ? canonify(o.args[0], me) : "";
 
     try {
-        string resp = do_command(command, me);
-        printf("%s", resp.c_str());
+        {
+            string resp = do_command(command + string(" ") + id, me); /* The daemon still takes args the old way ("start <daemon-id>"). */
+            printf("%s", resp.c_str());
+        }
         exit(EXIT_SUCCESS);
     } catch(std::exception &e) {
         fprintf(stderr, "%s", e.what());
