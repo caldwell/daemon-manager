@@ -91,6 +91,10 @@ string daemon::sock_file()
     return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
 }
 
+string daemon::log_file()
+{
+    return user->log_dir() + name + ".log";
+}
 
 #include <pwd.h>
 // Just like initgroups() but actually check for errors ಠ_ಠ
@@ -154,7 +158,7 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
-            string logfile=user->log_dir() + name + ".log";
+            string logfile = log_file();
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) ==  1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2)                                                  == -1 && throw_strerr("Couldn't dup stdout to stderr");
             chown(logfile.c_str(), user->uid, user->gid)               == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", logfile.c_str(), user->uid, user->gid);
