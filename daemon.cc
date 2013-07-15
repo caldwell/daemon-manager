@@ -143,11 +143,6 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
     // Child
     try {
         close(fd[0]);
-        if (config.want_sockfile) {
-            mkdir_ug("/var/run/daemon-manager/", 0755);
-            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/", 0755, config.run_as.uid);
-            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/" + user->name + "/", 0770, config.run_as.uid, user->gid);
-        }
         if (config.log_output) {
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
