@@ -106,14 +106,14 @@ static string canonify(string id, user *u)
     }
 
     // Look for ids that match our unqualified id.
-    // "th" will match "david/this" and "david/that" but not "david/other"
+    // "this" will match "david/this" and "bob/this" but not "david/that"
     vector<string> candidates;
     vector<string> ids;
     split(ids, id_list, ",");
     for (vector<string>::iterator i=ids.begin(); i != ids.end(); i++) {
         vector<string> components;
         split(components, *i, "/");
-        if (components.size() == 2 && components[1].find(id) == 0)
+        if (components.size() == 2 && components[1] == id)
             candidates.push_back(*i);
     }
 
