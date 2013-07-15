@@ -21,8 +21,8 @@ static void usage(char *me, int exit_code)
 {
     printf("Usage:\n"
            "\t%s list|rescan\n"
-           "\t%s status [<daemon-id>]\n"
-           "\t%s start|stop|restart <daemon-id>\n", me, me, me);
+           "\t%s [<daemon-id>] status\n"
+           "\t%s <daemon-id> start|stop|restart\n", me, me, me);
     exit(exit_code);
 }
 
@@ -50,7 +50,8 @@ int main(int argc, char **argv)
 
     string command = o.args.size() >= 1 ? o.args[0] : "status";
     if (o.args.size() == 2)
-        command += string(" ") + canonify(o.args[1], me);
+        // The daemon still takes args the old way ("start <daemon-id>").
+        command = o.args[1] + string(" ") + canonify(o.args[0], me);
 
     try {
         string resp = do_command(command, me);
@@ -142,8 +143,8 @@ dmctl - Daemon Manager control
 SYNOPSIS
 --------
   dmctl list|rescan
-  dmctl status [<daemon-id>]
-  dmctl start|stop|restart <daemon-id>
+  dmctl [<daemon-id>] status
+  dmctl <daemon-id> start|stop|restart
 
 DESCRIPTION
 -----------
@@ -156,7 +157,7 @@ COMMANDS
 
   This command will list all the daemon ids that the user is allowed to control.
 
-*status ['<daemon-id>']*::
+*['<daemon-id>'] status*::
 
   This command will print a human readable list of the daemons-ids and their
   current stats. If the optional parameter '<daemon-id>' is specified then only
@@ -208,7 +209,7 @@ COMMANDS
   It is not necessary to issue the 'rescan' command if a config file has been
   edited or deleted. 'start' and 'stop' will catch those 2 cases respectively.
 
-*start '<daemon-id>'*::
+*'<daemon-id>' start*::
 
   This will start the daemon identified by '<daemon-id>' if it hasn't already
   been started.
@@ -217,12 +218,12 @@ COMMANDS
   immediately. This is useful if you are debugging a daemon that is not launching
   properly and don't want to wait for the cooldown period.
 
-*stop '<daemon-id>'*::
+*'<daemon-id>' stop*::
 
   This will stop the daemon identified by '<daemon-id>' if it isn't already
   stopped.
 
-*restart '<daemon-id>'*::
+*'<daemon-id>' restart*::
 
   Currently this is just a short hand for a 'stop' command followed by a 'start'
   command.
