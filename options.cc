@@ -20,7 +20,7 @@ class option_match {
 
 options::options(int c, char **v)
 {
-    *v++; c--;
+    v++; c--;
     end = -1;
     for (int i=0; i<c; i++)
         if (string(v[i]) == "--" && end == (size_t) -1)
