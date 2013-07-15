@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         }
         exit(EXIT_SUCCESS);
     } catch(std::exception &e) {
-        fprintf(stderr, "%s", e.what());
+        fprintf(stderr, "%s%s", e.what(), *string(e.what()).rbegin() == '\n' ? "" : "\n");
         exit(EXIT_FAILURE);
     }
 }
