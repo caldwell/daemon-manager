@@ -29,7 +29,9 @@ void split(Container &list, std::string s, std::string separator)
         sep = s.find(separator, start);
         if (sep == s.npos)
             sep = s.length();
-        list.push_back(trim(s.substr(start, sep-start)));
+        std::string piece = trim(s.substr(start, sep-start));
+        if (sep != s.length() || s.length() != 0) // Trailing commas don't create empty strings
+            list.push_back(piece);
         start = sep + separator.length();
     }
 }
