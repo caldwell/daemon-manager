@@ -25,7 +25,7 @@ class options {
 // int main(int argv, char **argv)
 // {
 //    options o(argc, argv);
-//    if (o.get("help",       'h'))               { /* */ }
+//    if (o.get("help",       'h'))               { /* the return value of o.get() is enough to know that a flag was present */ }
 //    if (o.get("config",     'c', arg_required)) { /* o.arg is set to last -c or --config on the command line */}
 //    if (o.get("verbose",    'v'))               { /* o.argm.size() is a count of how many were specified (-v -v -v) */ }
 //    if (o.get("output",     'o', arg_required)) { /* o.argm is vactor<string> of --output or -o command line args:
