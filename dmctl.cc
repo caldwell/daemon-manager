@@ -11,8 +11,10 @@
 #include <unistd.h>
 #include <poll.h>
 #include <stdexcept>
+#include <sys/stat.h>
 #include "user.h"
 #include "stringutil.h"
+#include "strprintf.h"
 #include "options.h"
 
 using namespace std;
@@ -21,13 +23,16 @@ static void usage(char *me, int exit_code)
 {
     printf("Usage:\n"
            "\t%s list|rescan\n"
-           "\t%s status [<daemon-id>]\n"
-           "\t%s start|stop|restart <daemon-id>\n", me, me, me);
+           "\t%s [<daemon-id>] status\n"
+           "\t%s <daemon-id> start|stop|restart\n"
+           "\t%s <daemon-id> log|tail\n", me, me, me, me);
     exit(exit_code);
 }
 
 static string do_command(string command, user *me);
 static string canonify(string id, user *u);
+static void do_log(string id, user *me);
+static void do_tail(string id, user *me);
 
 int main(int argc, char **argv)
 {
@@ -48,16 +53,23 @@ int main(int argc, char **argv)
         errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
     }
 
-    string command = o.args.size() >= 1 ? o.args[0] : "status";
-    if (o.args.size() == 2)
-        command += string(" ") + canonify(o.args[1], me);
+    string command = o.args.size() == 0 ? "status"  :
+                     o.args.size() == 1 ? o.args[0] :
+                                          o.args[1];
+    string id = o.args.size() == 2 ? canonify(o.args[0], me) : "";
 
     try {
-        string resp = do_command(command, me);
-        printf("%s", resp.c_str());
+        if      (command == "log")
+            do_log(id, me);
+        else if (command == "tail")
+            do_tail(id, me);
+        else {
+            string resp = do_command(command + string(" ") + id, me); /* The daemon still takes args the old way ("start <daemon-id>"). */
+            printf("%s", resp.c_str());
+        }
         exit(EXIT_SUCCESS);
     } catch(std::exception &e) {
-        fprintf(stderr, "%s", e.what());
+        fprintf(stderr, "%s%s", e.what(), *string(e.what()).rbegin() == '\n' ? "" : "\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -105,14 +117,14 @@ static string canonify(string id, user *u)
     }
 
     // Look for ids that match our unqualified id.
-    // "th" will match "david/this" and "david/that" but not "david/other"
+    // "this" will match "david/this" and "bob/this" but not "david/that"
     vector<string> candidates;
     vector<string> ids;
     split(ids, id_list, ",");
     for (vector<string>::iterator i=ids.begin(); i != ids.end(); i++) {
         vector<string> components;
         split(components, *i, "/");
-        if (components.size() == 2 && components[1].find(id) == 0)
+        if (components.size() == 2 && components[1] == id)
             candidates.push_back(*i);
     }
 
@@ -126,6 +138,40 @@ static string canonify(string id, user *u)
     for (vector<string>::iterator c=candidates.begin(); c != candidates.end(); c++)
         fprintf(stderr, "\t%s\n", c->c_str());
     exit(EXIT_FAILURE);
+}
+
+static string find_log_file(string id, user *u)
+{
+    string log_file;
+    log_file = chomp(do_command("logfile "+id, u));
+
+    struct stat st;
+    stat(log_file.c_str(), &st) == 0 || throw_str("\"%s\" does not exist. Perhaps \"output=log\" is not enabled in %s's config file?",
+                                                  log_file.c_str(), id.c_str());
+    return log_file;
+}
+
+static void do_log(string id, user *u)
+{
+    if (id == "") throw_str("\"log\" needs an argument");
+    string log_file = find_log_file(id, u);
+
+    if (isatty(STDOUT_FILENO)) {
+        getenv("PAGER") && execl(getenv("PAGER"), getenv("PAGER"), log_file.c_str(), NULL);
+        execlp("less", "less", log_file.c_str(), NULL);
+        execlp("more", "more", log_file.c_str(), NULL);
+    }
+    execlp("cat",      "cat",      log_file.c_str(), NULL);
+    throw_str("Couldn't run $PAGER, less, more, or cat on %s", log_file.c_str());
+}
+
+static void do_tail(string id, user *u)
+{
+    if (id == "") throw_str("\"tail\" needs an argument");
+    string log_file = find_log_file(id, u);
+
+    execlp("tail", "tail", "-f", log_file.c_str(), NULL);
+    throw_str("Couldn't run \"tail -f\" on %s", log_file.c_str());
 }
 
 /* Magic quoting to transition to asciidoc mode
@@ -142,8 +188,9 @@ dmctl - Daemon Manager control
 SYNOPSIS
 --------
   dmctl list|rescan
-  dmctl status [<daemon-id>]
-  dmctl start|stop|restart <daemon-id>
+  dmctl [<daemon-id>] status
+  dmctl <daemon-id> start|stop|restart
+  dmctl <daemon-id> log|tail
 
 DESCRIPTION
 -----------
@@ -156,7 +203,7 @@ COMMANDS
 
   This command will list all the daemon ids that the user is allowed to control.
 
-*status ['<daemon-id>']*::
+*['<daemon-id>'] status*::
 
   This command will print a human readable list of the daemons-ids and their
   current stats. If the optional parameter '<daemon-id>' is specified then only
@@ -208,7 +255,7 @@ COMMANDS
   It is not necessary to issue the 'rescan' command if a config file has been
   edited or deleted. 'start' and 'stop' will catch those 2 cases respectively.
 
-*start '<daemon-id>'*::
+*'<daemon-id>' start*::
 
   This will start the daemon identified by '<daemon-id>' if it hasn't already
   been started.
@@ -217,15 +264,29 @@ COMMANDS
   immediately. This is useful if you are debugging a daemon that is not launching
   properly and don't want to wait for the cooldown period.
 
-*stop '<daemon-id>'*::
+*'<daemon-id>' stop*::
 
   This will stop the daemon identified by '<daemon-id>' if it isn't already
   stopped.
 
-*restart '<daemon-id>'*::
+*'<daemon-id>' restart*::
 
   Currently this is just a short hand for a 'stop' command followed by a 'start'
   command.
+
+*'<daemon-id>' log*::
+
+  This lets you view the daemon identified by <daemon-id>'s log file. If the
+  'PAGER' environment variable is set, then it will be used to view the
+  file. Otherwise 'less' will be used and if it is not found then 'more'
+  will be used and, failing that, 'cat'.
+
+  If this command is part of a pipeline, then 'cat' will always be used.
+
+*'<daemon-id>' tail*::
+
+  This runs "tail -f" on the log file of the daemon identified by
+  <daemon-id>.
 
 
 SEE ALSO

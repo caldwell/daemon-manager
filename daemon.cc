@@ -53,7 +53,7 @@ void daemon::load_config()
     map<string,string> cfg = parse_daemon_config(config_file);
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
-    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile", "shell" };
+    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "shell" };
     typedef pair<string,string> str_pair;
     foreach(str_pair c, cfg) {
         foreach(const char *key, valid_keys)
@@ -75,7 +75,6 @@ void daemon::load_config()
     config.start_command = cfg["start"];
     config.autostart = !cfg.count("autostart") || strchr("YyTt1Oo", cfg["autostart"].c_str()[0]);
     config.log_output = cfg.count("output") && cfg["output"] == "log";
-    config.want_sockfile = cfg.count("sockfile") && strchr("YyTt1Oo", cfg["sockfile"].c_str()[0]);
 
     config_file_stamp = st.st_mtime;
 }
@@ -86,11 +85,10 @@ bool daemon::exists()
     return stat(config_file.c_str(), &st) == 0 && S_ISREG(st.st_mode);
 }
 
-string daemon::sock_file()
+string daemon::log_file()
 {
-    return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
+    return user->log_dir() + name + ".log";
 }
-
 
 #include <pwd.h>
 // Just like initgroups() but actually check for errors ಠ_ಠ
@@ -109,6 +107,20 @@ void daemon::start(bool respawn)
 
     load_config(); // Make sure we are up to date.
 
+    current.pid = fork_setuid_exec(config.start_command);
+    log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
+    current.respawn_time = time(NULL);
+    if (respawn)
+        current.respawns++;
+    else
+        current.start_time = time(NULL);
+    current.state = running;
+}
+
+int daemon::fork_setuid_exec(string command, map<string,string> env_in)
+{
+    log(LOG_INFO, "Launching %s\n", command.c_str());
+
     int fd[2];
     if (pipe(fd) <0) throw_strerr("Couldn't pipe");
     fcntl(fd[0], F_SETFD, FD_CLOEXEC);
@@ -125,30 +137,17 @@ void daemon::start(bool respawn)
             this->reap();
             throw runtime_error(string(err));
         }
-        current.pid = child;
-        log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
-        current.respawn_time = time(NULL);
-        if (respawn)
-            current.respawns++;
-        else
-            current.start_time = time(NULL);
-        current.state = running;
-        return;
+        return child;
     }
 
     // Child
     try {
         close(fd[0]);
-        if (config.want_sockfile) {
-            mkdir_ug("/var/run/daemon-manager/", 0755);
-            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/", 0755, config.run_as.uid);
-            mkdir_ug("/var/run/daemon-manager/" + config.run_as.name + "/" + user->name + "/", 0770, config.run_as.uid, user->gid);
-        }
         if (config.log_output) {
             mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
-            string logfile=user->log_dir() + name + ".log";
+            string logfile = log_file();
             open(logfile.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0750) ==  1 || throw_strerr("Couldn't open log file %s", logfile.c_str());
             dup2(1,2)                                                  == -1 && throw_strerr("Couldn't dup stdout to stderr");
             chown(logfile.c_str(), user->uid, user->gid)               == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", logfile.c_str(), user->uid, user->gid);
@@ -162,7 +161,7 @@ void daemon::start(bool respawn)
                     "> %s\n", dash_length, dashes,
                     ctime(&t), id.c_str(),
                     dash_length, dashes,
-                    config.start_command.c_str());
+                    command.c_str());
         }
         _initgroups(config.run_as.name.c_str(), config.run_as.gid)
                                           == -1 && throw_strerr("Couldn't init groups for %s", config.run_as.name.c_str());
@@ -170,13 +169,11 @@ void daemon::start(bool respawn)
         setuid(config.run_as.uid)         == -1 && throw_strerr("Couldn't set uid to %d (%s)", config.run_as.uid, user->name.c_str());
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
-        map<string,string> ENV;
+        map<string,string> ENV = env_in;
         ENV.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
         ENV["PATH"]    = "/usr/bin:/bin";
-        if (config.want_sockfile)
-            ENV["SOCK_FILE"] = sock_file();
         list<string> envs;                         // Storage for the full env c++ strings.
         const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
         typedef pair<string,string> pss;
@@ -185,13 +182,14 @@ void daemon::start(bool respawn)
             *e++ = envs.front().c_str();
         }
         *e = NULL;
-        execle("/bin/sh", "/bin/sh", "-c", config.start_command.c_str(), (char*)NULL, env);
+        execle("/bin/sh", "/bin/sh", "-c", command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
         write(fd[1], e.what(), strlen(e.what())+1/*NULL*/);
         close(fd[1]);
         exit(0);
     }
+    return -1; // Can't happen--just here to shut gcc up.
 }
 
 void daemon::stop()

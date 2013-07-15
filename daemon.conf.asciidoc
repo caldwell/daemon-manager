@@ -11,7 +11,7 @@ daemon.conf - Daemon configuration file for Daemon Manager
 SYNOPSIS
 --------
   # Example conf file:
-  start=./daemon_exe --flags   # Line will be interpretted by /bin/sh
+  start=exec ./daemon --flags  # Line will be interpretted by /bin/sh
   dir=/some/working/dir        # working dir        default: /
   user=nobody                  # Who to run as      default: the user
   output=log                   # "log" or "discard" default: discard
@@ -87,24 +87,6 @@ CONFIGURATION OPTIONS
   +
   If this option is ``no'' then it will only be started by _dmctl(1)_'s
   ``start'' command.
-
-*sockfile*::
-
-  If this option is set to ``yes'' then 'daemon-manager(5)' will create a
-  directory with the proper permissions and pass an environment variable named
-  SOCK_FILE to the daemon. The socket itself is not created; that is left to
-  the daemon.
-  +
-  The socket path will be ``/var/run/daemon-manager/__<run-as-user>__/__<owner-user>__/__<daemon-name>__.socket'' ,
-  where ``__<run-as-user>__'' is the 'user' option in this file as described
-  above, ``__<owner-user>__'' is the user name of the owner of the daemon (which
-  user's ``daemons'' directory it was defined in), and ``__<daemon-name>__'' is the
-  basename of the daemon config file minus the ``.conf'' extension.
-  +
-  The rationale is that if there are a large number of FastCGI daemons in the
-  system then it is convenient to have their sockets organized and guess-able
-  just by knowing the daemon-id (obtained from 'dmctl(1)') and the system's
-  can_run_as policy (as defined in 'daemon-manager.conf(5)').
 
 SEE ALSO
 --------

@@ -25,8 +25,8 @@ class options {
 // int main(int argv, char **argv)
 // {
 //    options o(argc, argv);
-//    if (o.get("help",       'h'))               { /* */ }
-//    if (o.get("config",     'c', arg_required)) { /* o.arg is set to last -c or --config on the command line */}
+//    if (o.get("help",       'h'))               { /* the return value of o.get() is enough to know that a flag was present */ }
+//    if (o.get("config",     'c', arg_required)) { /* o.arg is set to last -c or --config on the command line */ }
 //    if (o.get("verbose",    'v'))               { /* o.argm.size() is a count of how many were specified (-v -v -v) */ }
 //    if (o.get("output",     'o', arg_required)) { /* o.argm is vactor<string> of --output or -o command line args:
 //                                                     "-o f1 -o f2 --output f3" would give { "f1", "f2", "f3" } */ }
@@ -42,7 +42,7 @@ class options {
 //
 // The '--' arg separator is supported. The first one encountered will set it up so that o.get() and
 // o.bad_args() will never go past that point when parsing options. Everything after it will still be
-// available in o.args(). The '--' itself will be removed from the list though.
+// available in o.args(), though the '--' itself will be removed from the list.
 
 #endif /* __OPTIONS_H__ */
 
