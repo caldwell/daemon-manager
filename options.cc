@@ -105,3 +105,57 @@ bool options::bad_args()
         }
     return bad.size() || is_bad;
 }
+
+
+#ifdef TEST
+// test-build-flags: -x c++ -lstdc++
+int main(int c, char **v)
+{
+    options o(c, v);
+    if (o.get("long",           "long only option"))               { printf("Long "); }
+    if (o.get("short",    's',  "short option"))                   { printf("Short "); }
+    if (o.get("count",    'c',  "counting option"))                { printf("Count=%zd ", o.argm.size()); }
+    if (o.get("long-arg",       "long arg option",  arg_required)) { printf("Long-Arg=%s ", o.arg.c_str()); }
+    if (o.get("short-arg",'a',  "short arg option", arg_required)) { printf("Short-Arg=%s ", o.arg.c_str()); }
+    if (o.get("help",           "Show Help"))                      { o.usage("", EXIT_SUCCESS); }
+
+    if (o.bad_args()) printf("Bad args! ");
+    if (o.args.size())
+        printf("Extra:");
+    for (vector<string>::iterator a = o.args.begin(); a != o.args.end(); a++)
+        printf(" %s", a->c_str());
+    printf("\n");
+}
+
+/* test-cases:
+   * --long --short -c -c -c --count --long-arg=david -a rules
+     > Long Short Count=4 Long-Arg=david Short-Arg=rules 
+   * --short-arg=hi -c 1 --short 2 --count
+     > Short Count=2 Short-Arg=hi Extra: 1 2
+   * bundling -ccaccs short
+     > Short Count=4 Short-Arg=short Extra: bundling
+   * --long-arg no=
+     > Long-Arg=no= 
+   * --long-arg
+    2> missing argument for --long-arg
+     > Bad args! 
+   * --short-arg
+    2> missing argument for --short-arg
+     > Bad args! 
+   * -a
+    2> missing argument for -a
+     > Bad args! 
+   * --long=short
+    2> "--long" does not take an argument
+     > Bad args! 
+   * -a=short
+    2> missing argument for -a
+    2> Unkown argument "-=hort"
+     > Short Bad args! Extra: -=hort
+   * -a 1 -- -s -ccc --long-arg
+     > Short-Arg=1 Extra: -s -ccc --long-arg
+   * -a -- 1 -s -ccc --long-arg
+    2> missing argument for -a
+     > Bad args! Extra: 1 -s -ccc --long-arg
+*/
+#endif
