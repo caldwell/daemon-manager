@@ -53,7 +53,7 @@ void daemon::load_config()
     map<string,string> cfg = parse_daemon_config(config_file);
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
-    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "sockfile", "shell" };
+    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "shell" };
     typedef pair<string,string> str_pair;
     foreach(str_pair c, cfg) {
         foreach(const char *key, valid_keys)
@@ -75,7 +75,6 @@ void daemon::load_config()
     config.start_command = cfg["start"];
     config.autostart = !cfg.count("autostart") || strchr("YyTt1Oo", cfg["autostart"].c_str()[0]);
     config.log_output = cfg.count("output") && cfg["output"] == "log";
-    config.want_sockfile = cfg.count("sockfile") && strchr("YyTt1Oo", cfg["sockfile"].c_str()[0]);
 
     config_file_stamp = st.st_mtime;
 }
@@ -84,11 +83,6 @@ bool daemon::exists()
 {
     struct stat st;
     return stat(config_file.c_str(), &st) == 0 && S_ISREG(st.st_mode);
-}
-
-string daemon::sock_file()
-{
-    return "/var/run/daemon-manager/" + config.run_as.name + "/" + id + ".socket";
 }
 
 string daemon::log_file()
@@ -185,8 +179,6 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
         ENV["PATH"]    = "/usr/bin:/bin";
-        if (config.want_sockfile)
-            ENV["SOCK_FILE"] = sock_file();
         list<string> envs;                         // Storage for the full env c++ strings.
         const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]
         typedef pair<string,string> pss;

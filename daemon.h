@@ -29,7 +29,6 @@ class daemon {
         std::string start_command;
         bool autostart;
         bool log_output;
-        bool want_sockfile;
     } config;
 
     // state:
@@ -51,7 +50,6 @@ class daemon {
 
     void load_config();
     bool exists();
-    std::string sock_file();
     std::string log_file();
     std::string state_str() { return _state_str[current.state]; }
     int fork_setuid_exec(string command, map<string,string> env = the_empty_map);
