@@ -1,4 +1,4 @@
-//  Copyright (c) 2010 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org> -*- c++ -*-
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __OPTIONS_H__
 #define __OPTIONS_H__
