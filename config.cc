@@ -15,6 +15,14 @@ using namespace std;
 
 static string remove_comment(string in) { return trim(in.substr(0, min(in.length(), in.find('#')))); }
 
+template<class T>
+std::vector<T> concat(std::vector<T> a, std::vector<T> b)
+{
+    std::vector<T> list = a;
+    list.insert(list.end(), b.begin(), b.end());
+    return list;
+}
+
 struct master_config parse_master_config(string path)
 {
     ifstream in(path.c_str(), ifstream::in);
@@ -71,8 +79,6 @@ struct master_config parse_master_config(string path)
                 it = list.begin(); // start over--our iterator is invalidated by the erase().
             }
 
-        list = uniq(list);
-
         // Expand @group in the key to individual user names by duplicating the list
         if (key[0] == '@') {
             string group = key.substr(1);
@@ -81,9 +87,9 @@ struct master_config parse_master_config(string path)
                 log(LOG_ERR, "%s:%d Couldn't find group \"%s\". Ignoring line.\n", path.c_str(), n, group.c_str());
             else
                 for (int i=0; g->gr_mem[i]; i++)
-                    (*section)[g->gr_mem[i]] = list;
+                    (*section)[g->gr_mem[i]] = uniq(concat((*section)[g->gr_mem[i]], list));
         } else
-            (*section)[key] = list;
+            (*section)[key] = uniq(concat((*section)[key], list));
     }
 
     return config;
