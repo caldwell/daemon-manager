@@ -47,7 +47,7 @@ and
 
   [manages]
 
-The 'can_run_as' section identifes which users are allowed to launch daemons. It
+The 'can_run_as' section identifies which users are allowed to launch daemons. It
 looks like this:
 
   bob: mary, bruce, rhonda
