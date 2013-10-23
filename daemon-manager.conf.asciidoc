@@ -23,6 +23,7 @@ SYNOPSIS
   [manages]
   user1 : user2, user3 # whitespace is generally ignored
   user3: user1
+  user3: user2            # user3 manages user1 & user2 (the rules accumulate)
   @group1: user1, @group2 # Groups work here too.
 
 DESCRIPTION
@@ -95,6 +96,21 @@ is equivalent to this, given the same constraints:
 
   mary: bob
   bruce: bob
+
+REPETITION
+~~~~~~~~~~
+If a user is referenced on the left hand side of the `:' in more than one
+rule (including the case where the user is part of a `@group' expansion),
+then the result is an accumulation of the rules:
+
+  bob: mary
+  bob: bruce
+  @dev: www-data
+
+If 'dev' has 'bob' and 'bruce' as members, then this is equivalent:
+
+  bob: mary, bruce, www-data
+  bruce: www-data
 
 SEE ALSO
 --------
