@@ -75,6 +75,8 @@ That line means that 'larry' can start, stop, restart, and inspect 'bob' or
 _martha_'s daemons. He will not be able to see or control _bruce_'s daemons,
 though.
 
+GROUPS
+~~~~~~
 If a name is prefixed by `@' then the name is interpreted as a unix group
 name and acts as if the members of that group had been listed explicitly:
 
