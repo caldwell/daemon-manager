@@ -6,6 +6,7 @@
 #include "uniq.h"
 #include "stringutil.h"
 #include "log.h"
+#include <grp.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -56,7 +57,33 @@ struct master_config parse_master_config(string path)
         if (sep != line.npos)
             split(list, trim(line.substr(sep+1)), string(","));
 
-        (*section)[key] = uniq(list);
+        // Expand @group in list to individual user names.
+        for (auto it = list.begin(); it != list.end(); it++)
+            if ((*it)[0] == '@') {
+                string group = it->substr(1);
+                struct group *g = getgrnam(group.c_str());
+                list.erase(it);
+                if (!g)
+                    log(LOG_ERR, "%s:%d Couldn't find group \"%s\". Ignoring.\n", path.c_str(), n, group.c_str());
+                else
+                    for (int i=0; g->gr_mem[i]; i++)
+                        list.push_back(string(g->gr_mem[i]));
+                it = list.begin(); // start over--our iterator is invalidated by the erase().
+            }
+
+        list = uniq(list);
+
+        // Expand @group in the key to individual user names by duplicating the list
+        if (key[0] == '@') {
+            string group = key.substr(1);
+            struct group *g = getgrnam(group.c_str());
+            if (!g)
+                log(LOG_ERR, "%s:%d Couldn't find group \"%s\". Ignoring line.\n", path.c_str(), n, group.c_str());
+            else
+                for (int i=0; g->gr_mem[i]; i++)
+                    (*section)[g->gr_mem[i]] = list;
+        } else
+            (*section)[key] = list;
     }
 
     return config;
