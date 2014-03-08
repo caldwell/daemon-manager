@@ -7,7 +7,7 @@ all: $(SBIN) $(BIN)
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o json-escape.o
 
 dmctl daemon-manager: CC=g++
-dmctl daemon-manager: CXXFLAGS += -MMD -g -Wall -Wextra -Wno-parentheses
+dmctl daemon-manager: CXXFLAGS += -std=c++11 -MMD -g -Wall -Wextra -Wno-parentheses
 dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\"
 dmctl daemon-manager: LDFLAGS  += -g
 
