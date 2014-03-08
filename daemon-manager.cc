@@ -13,11 +13,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <sys/socket.h>
-#if defined(LOCAL_PEERCRED)
-#  include <sys/ucred.h>
-#endif
 #include <sys/wait.h>
 #include <poll.h>
 #include <signal.h>
@@ -36,6 +32,7 @@
 #include "foreach.h"
 #include "stringutil.h"
 #include "json-escape.h"
+#include "peercred.h"
 
 using namespace std;
 
@@ -501,23 +498,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
                         fcntl(client, F_SETFL, O_NONBLOCK);
                         uid_t uid;
                         try {
-#if defined(SO_PEERCRED)
-                            struct ucred cred;
-                            socklen_t cred_len = sizeof(cred);
-                            getsockopt(client, SOCK_STREAM, SO_PEERCRED, &cred, &cred_len) == 0
-                                || throw_strerr("Couldn't determine user: getsockopt() failed");
-                            if (cred_len != sizeof(cred)) throw_str("getsockopt returned %d but I wanted %zd", cred_len, sizeof(cred));
-                            uid = cred.uid;
-#elif defined(LOCAL_PEERCRED)
-                            struct xucred cred;
-                            socklen_t cred_len = sizeof(cred);
-                            getsockopt(client, SOCK_STREAM, LOCAL_PEERCRED, &cred, &cred_len) == 0
-                                || throw_strerr("Couldn't determine user: getsockopt() failed");
-                            if (cred_len != sizeof(cred)) throw_str("getsockopt returned %d but I wanted %zd", cred_len, sizeof(cred));
-                            uid = cred.cr_uid;
-#else
-# error "daemon-manager requires the PEERCRED socket option for security. If your system doesn't support this, I feel bad for you, son."
-#endif
+                            uid = get_peer_uid(client);
                             if (!users_by_id.count(uid)) {
                                 struct passwd *p = getpwuid(uid);
                                 throw_str("Not authorized. \"%s\" (uid %d) is not in the daemon-manager.conf file", p ? p->pw_name : "unknown user", uid);
