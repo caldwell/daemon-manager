@@ -15,7 +15,9 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <sys/socket.h>
-#include <sys/ucred.h>
+#if defined(LOCAL_PEERCRED)
+#  include <sys/ucred.h>
+#endif
 #include <sys/wait.h>
 #include <poll.h>
 #include <signal.h>
@@ -497,15 +499,28 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
                         }
                         fcntl(client, F_SETFD, FD_CLOEXEC);
                         fcntl(client, F_SETFL, O_NONBLOCK);
-                        struct xucred cred;
-                        socklen_t cred_len = sizeof(cred);
+                        uid_t uid;
                         try {
+#if defined(SO_PEERCRED)
+                            struct ucred cred;
+                            socklen_t cred_len = sizeof(cred);
+                            getsockopt(client, SOCK_STREAM, SO_PEERCRED, &cred, &cred_len) == 0
+                                || throw_strerr("Couldn't determine user: getsockopt() failed");
+                            if (cred_len != sizeof(cred)) throw_str("getsockopt returned %d but I wanted %zd", cred_len, sizeof(cred));
+                            uid = cred.uid;
+#elif defined(LOCAL_PEERCRED)
+                            struct xucred cred;
+                            socklen_t cred_len = sizeof(cred);
                             getsockopt(client, SOCK_STREAM, LOCAL_PEERCRED, &cred, &cred_len) == 0
                                 || throw_strerr("Couldn't determine user: getsockopt() failed");
                             if (cred_len != sizeof(cred)) throw_str("getsockopt returned %d but I wanted %zd", cred_len, sizeof(cred));
-                            if (!users_by_id.count(cred.cr_uid)) {
-                                struct passwd *p = getpwuid(cred.cr_uid);
-                                throw_str("Not authorized. \"%s\" (uid %d) is not in the daemon-manager.conf file", p ? p->pw_name : "unknown user", cred.cr_uid);
+                            uid = cred.cr_uid;
+#else
+# error "daemon-manager requires the PEERCRED socket option for security. If your system doesn't support this, I feel bad for you, son."
+#endif
+                            if (!users_by_id.count(uid)) {
+                                struct passwd *p = getpwuid(uid);
+                                throw_str("Not authorized. \"%s\" (uid %d) is not in the daemon-manager.conf file", p ? p->pw_name : "unknown user", uid);
                             }
                         } catch(std::exception &e) {
                             log(LOG_WARNING, "Command socket: %s\n", e.what());
@@ -516,7 +531,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
                             close(client);
                             continue;
                         }
-                        clients[client] = users_by_id[cred.cr_uid];
+                        clients[client] = users_by_id[uid];
                     } else if (clients.count(fd[i].fd)) {
                         char buf[1000];
                         int red = read(fd[i].fd, buf, sizeof(buf)-1);
