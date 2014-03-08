@@ -171,7 +171,6 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
         map<string,string> ENV = env_in;
-        ENV.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
         ENV["HOME"]    = user->homedir;
         ENV["LOGNAME"] = user->name;
         ENV["PATH"]    = "/usr/bin:/bin";
