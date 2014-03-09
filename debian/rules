@@ -14,3 +14,4 @@ export DH_VERBOSE=1
 
 override_dh_auto_install:
 	make -j1 install DESTDIR=debian/daemon-manager PREFIX=/usr
+	install -D -m 644 -o root -g root contrib/daemon-manager-completion.bash debian/daemon-manager/etc/bash_completion.d/daemon-manager
