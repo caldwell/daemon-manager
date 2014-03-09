@@ -1,3 +1,14 @@
+daemon-manager (0.99)
+
+  * Replaced individual command sockets with a single one in /var/run.
+
+  * Added "export ENV=value" syntax to daemon config file to set
+    environment variables.
+
+  * Added bash completion script.
+
+ -- David Caldwell <david@porkrind.org>  Sat, 08 Mar 2014 16:47:53 -0800
+
 daemon-manager (0.98)
 
   * Swapped command and daemon-id to match "service" param ordering.
