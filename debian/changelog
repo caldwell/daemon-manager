@@ -11,7 +11,12 @@ daemon-manager (0.99) unstable; urgency=medium
 
   * Install new bash completion script.
 
- -- David Caldwell <david@porkrind.org>  Sat, 08 Mar 2014 16:54:09 -0800
+  * Fix postinst script to smoothly reload instead of harshly restart when
+    running under systemd.
+
+  * Add native systemd config.
+
+ -- David Caldwell <david@porkrind.org>  Sat, 08 Mar 2014 19:17:30 -0800
 
 daemon-manager (0.98) unstable; urgency=low
 
