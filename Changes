@@ -1,3 +1,9 @@
+daemon-manager (0.99.1)
+
+  * Fix the bash completion code. Awk will be the death of me.
+
+ -- David Caldwell <david@porkrind.org>  Sun, 09 Mar 2014 16:15:34 -0700
+
 daemon-manager (0.99)
 
   * Replaced individual command sockets with a single one in /var/run.
