@@ -14,8 +14,8 @@ type: :feature
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2013-03-09 10:00:54.771395 Z
 references: []
 
@@ -25,3 +25,25 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2014-03-09 00:37:04.177161 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - |-
+    commit 9cff4e84110c78d1ac361ea28f090978e7223c51 (HEAD, refs/heads/master)
+    Author: David Caldwell <david@porkrind.org>
+    Date:   Sat Mar 8 16:36:40 2014 -0800
+    
+        Add "export var=value" syntax to daemon config for adding environment variables.
+    
+        You could do it previosuly by just sticking it on the "start" line like:
+    
+            start=DAVID=david RULES=rules exec echo $DAVID $RULES
+    
+        ...but that got real ugly when the environment variables started piling
+        up. The new syntax looks much better:
+    
+            export DAVID=david
+            export RULES=rules
+            start=exec echo $DAVID $RULES
+    
+        Closes: #158357055b
