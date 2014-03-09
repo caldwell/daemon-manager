@@ -1,3 +1,11 @@
+daemon-manager (0.99.1) unstable; urgency=medium
+
+  * New Upstream release:
+
+    * Fix the bash completion code. Awk will be the death of me.
+
+ -- David Caldwell <david@porkrind.org>  Sun, 09 Mar 2014 16:42:50 -0700
+
 daemon-manager (0.99) unstable; urgency=medium
 
   *  New Upstream release:
