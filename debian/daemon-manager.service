@@ -1,0 +1,13 @@
+[Unit]
+Description=Daemon Manager
+Documentation=man:daemon-manager(1) man:daemon.conf(1) man:daemon-manager.conf(1)
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/daemon-manager --foreground $DAEMON_OPTS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+EnvironmentFile=-/etc/default/daemon-manager
+
+[Install]
+WantedBy=multi-user.target
