@@ -1,4 +1,5 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org>
+//  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 ////
 
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <poll.h>
 #include <stdexcept>
 #include <sys/stat.h>
+#include "command-sock.h"
 #include "user.h"
 #include "stringutil.h"
 #include "strprintf.h"
@@ -29,10 +31,10 @@ static void usage(char *me, int exit_code)
     exit(exit_code);
 }
 
-static string do_command(string command, user *me);
-static string canonify(string id, user *u);
-static void do_log(string id, user *me);
-static void do_tail(string id, user *me);
+static string do_command(string command, int command_socket_fd);
+static string canonify(string id, int command_socket_fd);
+static void do_log(string id, int command_socket_fd);
+static void do_tail(string id, int command_socket_fd);
 
 int main(int argc, char **argv)
 {
@@ -41,30 +43,30 @@ int main(int argc, char **argv)
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
     if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
 
-    user *me;
+    int command_socket;
     try {
-        me = new user(getuid());
+        struct sockaddr_un addr = command_sock_addr();
+        command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
+        if (command_socket < 0) throw_strerr("socket() failed");
+        connect(command_socket, (struct sockaddr*) &addr, sizeof(sa_family_t) + strlen(addr.sun_path) + 1)
+                                                                        == 0 || throw_strerr("Connect to %s failed", addr.sun_path);
+        fcntl(command_socket, F_SETFL, O_NONBLOCK)                      == 0 || throw_strerr("Couldn't set O_NONBLOCK on %s", addr.sun_path);
     } catch (std::exception &e) {
-        errx(1, "Error: %s\n", e.what());
-    }
-    try {
-        me->open_client_socket();
-    } catch (std::exception &e) {
-        errx(1, "daemon-manager does not appear to be running or you are not in the daemon-manager.conf file.");
+        errx(1, "daemon-manager does not appear to be running.");
     }
 
     string command = o.args.size() == 0 ? "status"  :
                      o.args.size() == 1 ? o.args[0] :
                                           o.args[1];
-    string id = o.args.size() == 2 ? canonify(o.args[0], me) : "";
+    string id = o.args.size() == 2 ? canonify(o.args[0], command_socket) : "";
 
     try {
         if      (command == "log")
-            do_log(id, me);
+            do_log(id, command_socket);
         else if (command == "tail")
-            do_tail(id, me);
+            do_tail(id, command_socket);
         else {
-            string resp = do_command(command + string(" ") + id, me); /* The daemon still takes args the old way ("start <daemon-id>"). */
+            string resp = do_command(command + string(" ") + id, command_socket); /* The daemon still takes args the old way ("start <daemon-id>"). */
             printf("%s", resp.c_str());
         }
         exit(EXIT_SUCCESS);
@@ -74,15 +76,15 @@ int main(int argc, char **argv)
     }
 }
 
-static string do_command(string command, user *me)
+static string do_command(string command, int command_socket_fd)
 {
-    int wrote = write(me->command_socket, command.c_str(), command.length());
+    int wrote = write(command_socket_fd, command.c_str(), command.length());
     if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
 
     // Wait for our response:
     struct pollfd fd[1];
-    fd[0].fd = me->command_socket;
+    fd[0].fd = command_socket_fd;
     fd[0].events = POLLIN;
     int got = poll(fd, 1, -1);
     if (got < 0)  err(1, "Poll failed");
@@ -91,7 +93,7 @@ static string do_command(string command, user *me)
     string out;
     while (1) {
         char buf[256];
-        int red = read(me->command_socket, buf, sizeof(buf)-1);
+        int red = read(command_socket_fd, buf, sizeof(buf)-1);
         if (red == 0 || red < 0 && errno == EAGAIN) break; // done.
         if (red < 0)   err(1, "No response from daemon-manager");
         out.append(buf, red);
@@ -103,7 +105,7 @@ static string do_command(string command, user *me)
     throw std::runtime_error(out);
 }
 
-static string canonify(string id, user *u)
+static string canonify(string id, int command_socket_fd)
 {
     if (id.find('/') != id.npos) // already fully qualified
         return id;
@@ -111,7 +113,7 @@ static string canonify(string id, user *u)
     // Ask daemon-manager for the list of ids we can manage.
     string id_list;
     try {
-        id_list = chomp(do_command("list", u));
+        id_list = chomp(do_command("list", command_socket_fd));
     } catch(std::exception &e) {
         errx(1, "'list' failed: %s", e.what());
     }
@@ -140,10 +142,10 @@ static string canonify(string id, user *u)
     exit(EXIT_FAILURE);
 }
 
-static string find_log_file(string id, user *u)
+static string find_log_file(string id, int command_socket_fd)
 {
     string log_file;
-    log_file = chomp(do_command("logfile "+id, u));
+    log_file = chomp(do_command("logfile "+id, command_socket_fd));
 
     struct stat st;
     stat(log_file.c_str(), &st) == 0 || throw_str("\"%s\" does not exist. Perhaps \"output=log\" is not enabled in %s's config file?",
@@ -151,10 +153,10 @@ static string find_log_file(string id, user *u)
     return log_file;
 }
 
-static void do_log(string id, user *u)
+static void do_log(string id, int command_socket_fd)
 {
     if (id == "") throw_str("\"log\" needs an argument");
-    string log_file = find_log_file(id, u);
+    string log_file = find_log_file(id, command_socket_fd);
 
     if (isatty(STDOUT_FILENO)) {
         getenv("PAGER") && execl(getenv("PAGER"), getenv("PAGER"), log_file.c_str(), NULL);
@@ -165,10 +167,10 @@ static void do_log(string id, user *u)
     throw_str("Couldn't run $PAGER, less, more, or cat on %s", log_file.c_str());
 }
 
-static void do_tail(string id, user *u)
+static void do_tail(string id, int command_socket_fd)
 {
     if (id == "") throw_str("\"tail\" needs an argument");
-    string log_file = find_log_file(id, u);
+    string log_file = find_log_file(id, command_socket_fd);
 
     execlp("tail", "tail", "-f", log_file.c_str(), NULL);
     throw_str("Couldn't run \"tail -f\" on %s", log_file.c_str());

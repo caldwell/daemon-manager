@@ -1,4 +1,5 @@
-//  Copyright (c) 2011 David Caldwell,  All Rights Reserved. -*- c++ -*-
+//  Copyright (c) 2011-2013 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __JSON_ESCAPE_H__
 #define __JSON_ESCAPE_H__
 

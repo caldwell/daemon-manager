@@ -16,10 +16,15 @@ SYNOPSIS
   # user2 is allowed to launch daemons but only as itself
   user2
   user3: nobody, www-data # Comments can go anywhere.
+  user4: @group1          # user4 can run as any user in group1
+  @group2: user1, @group3 # any user in group2 can run as user1
+                          # or any user in group3
 
   [manages]
   user1 : user2, user3 # whitespace is generally ignored
   user3: user1
+  user3: user2            # user3 manages user1 & user2 (the rules accumulate)
+  @group1: user1, @group2 # Groups work here too.
 
 DESCRIPTION
 -----------
@@ -43,7 +48,7 @@ and
 
   [manages]
 
-The 'can_run_as' section identifes which users are allowed to launch daemons. It
+The 'can_run_as' section identifies which users are allowed to launch daemons. It
 looks like this:
 
   bob: mary, bruce, rhonda
@@ -70,6 +75,42 @@ the 'can_run_as' section:
 That line means that 'larry' can start, stop, restart, and inspect 'bob' or
 _martha_'s daemons. He will not be able to see or control _bruce_'s daemons,
 though.
+
+GROUPS
+~~~~~~
+If a name is prefixed by `@' then the name is interpreted as a unix group
+name and acts as if the members of that group had been listed explicitly:
+
+  bob: @dev
+
+is equivalent to this, if the group named 'dev' has 'mary' and 'bruce' as
+members:
+
+  bob: mary, bruce
+
+On the other hand, this:
+
+  @dev: bob
+
+is equivalent to this, given the same constraints:
+
+  mary: bob
+  bruce: bob
+
+REPETITION
+~~~~~~~~~~
+If a user is referenced on the left hand side of the `:' in more than one
+rule (including the case where the user is part of a `@group' expansion),
+then the result is an accumulation of the rules:
+
+  bob: mary
+  bob: bruce
+  @dev: www-data
+
+If 'dev' has 'bob' and 'bruce' as members, then this is equivalent:
+
+  bob: mary, bruce, www-data
+  bruce: www-data
 
 SEE ALSO
 --------

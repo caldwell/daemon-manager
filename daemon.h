@@ -1,4 +1,5 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved. -*- c++ -*-
+//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __DAEMON_H__
 #define __DAEMON_H__
 
@@ -29,6 +30,7 @@ class daemon {
         std::string start_command;
         bool autostart;
         bool log_output;
+        std::map<std::string,std::string> environment;
     } config;
 
     // state:

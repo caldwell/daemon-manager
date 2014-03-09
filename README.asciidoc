@@ -6,6 +6,16 @@ is perfect for running FastCGI servers, torrent servers, or any other daemon
 that isn't meant to run in the root context.
 
 
+Simplicity
+~~~~~~~~~~
+
+Daemon Manager make it easy to set up new daemons. Here's an example config
+file for a Minecraft server:
+
+  dir=/home/someone/minecraft
+  start=exec java -Xmx256M -Xms256M -jar minecraft_server.jar nogui
+
+
 Availability
 ~~~~~~~~~~~~
 
@@ -63,7 +73,7 @@ themselves (or another non-privileged user) and control themselves.
 Author, Copyright, and License
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Copyright © 2010 by David Caldwell <david@porkrind.org>
+Copyright © 2010-2013 by David Caldwell <david@porkrind.org>
 
 Daemon Manager is licensed under the GNU General Public License (v3.0). See
 the LICENSE file for details.

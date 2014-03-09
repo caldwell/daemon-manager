@@ -1,7 +1,9 @@
-//  Copyright (c) 2010 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org>
+//  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 ////
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <list>
@@ -11,14 +13,15 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <poll.h>
 #include <signal.h>
+#include <pwd.h>
 #include "config.h"
 #include "user.h"
 #include "daemon.h"
+#include "command-sock.h"
 #include "passwd.h"
 #include "permissions.h"
 #include "lengthof.h"
@@ -29,6 +32,7 @@
 #include "foreach.h"
 #include "stringutil.h"
 #include "json-escape.h"
+#include "peercred.h"
 
 using namespace std;
 
@@ -46,7 +50,8 @@ static vector<class daemon*> load_daemons(vector<user*> user_list, vector<class 
 static void import_daemons(vector<class daemon*> daemons, FILE *f);
 static void export_daemons(vector<class daemon*> daemons, FILE *f);
 static void autostart(vector<class daemon*> daemons);
-static void select_loop(vector<user*> users, vector<class daemon*> daemons);
+static int open_server_socket();
+static void select_loop(vector<user*> users, vector<class daemon*> daemons, int command_socket_fd);
 static vector<class daemon*> manageable_by_user(user *user, vector<class daemon*> daemons);
 static string do_command(string command_line, user *user, vector<class daemon*> *daemons);
 static void dump_config(struct master_config config);
@@ -95,6 +100,13 @@ int main(int argc, char **argv)
     if (pidfile != "")
         create_pidfile(pidfile);
 
+    int command_socket_fd;
+    try { command_socket_fd = open_server_socket(); }
+    catch(std::exception &e) {
+        log(LOG_ERR, "Couldn't open command socket: %s\n", e.what());
+        exit(EXIT_FAILURE);
+    }
+
     vector<user*> users = user_list_from_config(config);
 
     vector<class daemon*> daemons = load_daemons(users);
@@ -115,7 +127,7 @@ int main(int argc, char **argv)
 
     autostart(daemons);
 
-    select_loop(users, daemons);
+    select_loop(users, daemons, command_socket_fd);
 
     return 0;
 }
@@ -187,7 +199,6 @@ static vector<user*> user_list_from_config(struct master_config config)
         try {
             u = new user(name);
             u->create_dirs();
-            u->open_server_socket();
             user_list.push_back(users[name] = u);
         } catch (std::exception &e) {
             log(LOG_WARNING, "Ignoring %s: %s\n", name.c_str(), e.what());
@@ -385,6 +396,25 @@ static void reincarnate(vector<class daemon*> daemons)
     }
 }
 
+static int open_server_socket()
+{
+    struct sockaddr_un addr = command_sock_addr();
+    struct stat st;
+    if(stat(addr.sun_path, &st) == 0)
+        unlink(addr.sun_path)                                    == 0 || throw_strerr("Couldn't remove old socket @ %s", addr.sun_path);
+
+    int command_socket = socket(PF_LOCAL, SOCK_STREAM /*SOCK_DGRAM*/, 0);
+    if (command_socket < 0) throw_strerr("socket() failed");
+    fcntl(command_socket, F_SETFD, FD_CLOEXEC)                  == -1 && throw_strerr("Couldn't set socket to close on exec");
+    ::bind(command_socket, (struct sockaddr*) &addr, sizeof(sa_family_t) + strlen(addr.sun_path) + 1)
+                                                                 == 0 || throw_strerr("Binding to socket %s failed", addr.sun_path);
+    listen(command_socket, 1)                                    == 0 || throw_strerr("listen(%s) failed", addr.sun_path);
+
+    // Needs to be world read/writable so that all users can connect (we authrorize them when they connect)
+    chmod(addr.sun_path, 0777)                                   == 0 || throw_strerr("chmod %s, 0777", addr.sun_path);
+    return command_socket;
+}
+
 static void distribute_signal_to_children(int sig)
 {
     log(LOG_DEBUG, "Signal: %s [%d]\n", strsignal(sig), sig);
@@ -404,22 +434,20 @@ static void handle_sig_hup(int)
     log(LOG_DEBUG, "SIGHUP\n");
 }
 
-static void select_loop(vector<user*> users, vector<class daemon*> daemons)
+static void select_loop(vector<user*> users, vector<class daemon*> daemons, int command_socket_fd)
 {
     signal(SIGCHLD, handle_sig_child);
     signal(SIGTERM, distribute_signal_to_children);
     signal(SIGINT,  distribute_signal_to_children);
     signal(SIGHUP,  handle_sig_hup);
     signal(SIGPIPE, SIG_IGN);
-    typedef map<int,user*> fd_map;
     typedef map<int,user*>::iterator fd_map_it;
 
-    map<int,user*> listeners;
     map<int,user*> clients;
-    listeners.size(); // Work around clang bug (map<>::size doesn't get pulled in even though it appears in the below array declaration.
+    map<uid_t,user*> users_by_id;
 
     foreach(class user *u, users)
-        listeners[u->command_socket] = u;
+        users_by_id[u->uid] = u;
 
     while (1) {
         if (hup_two_three_four) {
@@ -427,13 +455,11 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
             reincarnate(daemons);
         }
 
-        struct pollfd fd[listeners.size() + clients.size()];
+        struct pollfd fd[1/*command_socket*/ + clients.size()];
         int nfds = 0;
 
-        for (fd_map_it lis = listeners.begin(); lis != listeners.end(); lis++, nfds++) {
-            fd[nfds].fd = lis->first;
-            fd[nfds].events = POLLIN;
-        }
+        fd[nfds].fd = command_socket_fd;
+        fd[nfds++].events = POLLIN;
         for (fd_map_it cli = clients.begin(); cli != clients.end(); cli++, nfds++) {
             fd[nfds].fd = cli->first;
             fd[nfds].events = POLLIN;
@@ -460,17 +486,33 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons)
         if (got > 0) {
             for (size_t i=0; i<lengthof(fd); i++) {
                 if (fd[i].revents & POLLIN) {
-                    if (listeners.count(fd[i].fd)) {
+                    if (fd[i].fd == command_socket_fd) {
                         struct sockaddr_un addr;
                         socklen_t addr_len = sizeof(addr);
-                        int client = accept(fd[i].fd, (struct sockaddr*) &addr, &addr_len);
+                        int client = accept(command_socket_fd, (struct sockaddr*) &addr, &addr_len);
                         if (client == -1) {
-                            log(LOG_WARNING, "accept() from socket %s failed: %s\n", listeners[fd[i].fd]->socket_path().c_str(), strerror(errno));
+                            log(LOG_WARNING, "accept() from command socket failed: %s\n", strerror(errno));
                             continue;
                         }
                         fcntl(client, F_SETFD, FD_CLOEXEC);
                         fcntl(client, F_SETFL, O_NONBLOCK);
-                        clients[client] = listeners[fd[i].fd];
+                        uid_t uid;
+                        try {
+                            uid = get_peer_uid(client);
+                            if (!users_by_id.count(uid)) {
+                                struct passwd *p = getpwuid(uid);
+                                throw_str("Not authorized. \"%s\" (uid %d) is not in the daemon-manager.conf file", p ? p->pw_name : "unknown user", uid);
+                            }
+                        } catch(std::exception &e) {
+                            log(LOG_WARNING, "Command socket: %s\n", e.what());
+                            string resp = string("ERR: ")+e.what()+"\n";
+                            ssize_t wrote = write(client, resp.c_str(), resp.length());
+                            if (wrote < 0)                       log(LOG_WARNING, "Couldn't write err to client socket %d: %s\n", client, strerror(errno));
+                            if (wrote != (ssize_t)resp.length()) log(LOG_WARNING, "Couldn't write err to client socket %d (%zd vs %lu)\n", client, wrote, resp.length());
+                            close(client);
+                            continue;
+                        }
+                        clients[client] = users_by_id[uid];
                     } else if (clients.count(fd[i].fd)) {
                         char buf[1000];
                         int red = read(fd[i].fd, buf, sizeof(buf)-1);
