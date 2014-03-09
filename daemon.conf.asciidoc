@@ -43,6 +43,14 @@ a "#" and continues to the end of a line.
 
 Blank lines are ignored.
 
+Environment variables for the process can be set with the 'export' keyword:
+
+  export env_var = value
+
+This resembles 'bash' but is not. In particular, quotes are not interpreted
+in the config file, so don't put quotes around 'value' unless you want
+literal quote characters in your environment variable.
+
 CONFIGURATION OPTIONS
 ---------------------
 

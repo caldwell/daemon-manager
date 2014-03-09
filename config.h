@@ -14,11 +14,16 @@ struct master_config {
     map<string,vector<string> > manages;
 };
 
+struct daemon_config {
+    map<string,string> config;
+    map<string,string> env;
+};
+
 typedef map<string, vector<string> >::iterator config_it;
 typedef vector<string>::iterator config_list_it;
 
 struct master_config parse_master_config(string path);
-map<string,string> parse_daemon_config(string path);
+struct daemon_config parse_daemon_config(string path);
 
 #endif /* __MASTER_CONFIG_H__ */
 

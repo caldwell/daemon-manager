@@ -30,6 +30,7 @@ class daemon {
         std::string start_command;
         bool autostart;
         bool log_output;
+        std::map<std::string,std::string> environment;
     } config;
 
     // state:

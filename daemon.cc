@@ -51,7 +51,9 @@ void daemon::load_config()
     struct stat st = permissions::check(config_file, 0113, user->uid);
     if (st.st_mtime == config_file_stamp) return;
 
-    map<string,string> cfg = parse_daemon_config(config_file);
+    struct daemon_config config_in = parse_daemon_config(config_file);
+    map<string,string> cfg = config_in.config;
+    config.environment = config_in.env;
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
     const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "shell" };
@@ -108,7 +110,7 @@ void daemon::start(bool respawn)
 
     load_config(); // Make sure we are up to date.
 
-    current.pid = fork_setuid_exec(config.start_command);
+    current.pid = fork_setuid_exec(config.start_command, config.environment);
     log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
     current.respawn_time = time(NULL);
     if (respawn)

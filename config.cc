@@ -95,10 +95,10 @@ struct master_config parse_master_config(string path)
     return config;
 }
 
-map<string,string> parse_daemon_config(string path)
+struct daemon_config parse_daemon_config(string path)
 {
     ifstream in(path.c_str(), ifstream::in);
-    map<string,string> config;
+    struct daemon_config config;
 
     int n=0;
     string line;
@@ -110,10 +110,16 @@ map<string,string> parse_daemon_config(string path)
         if (line.empty()) continue;
 
         size_t sep;
+        map<string,string> *section = &config.config;
+        if (trim(line.substr(0, sep=line.find(' '))) == "export") {
+            line = line.substr(sep+1);
+            section = &config.env;
+        }
+
         string key = trim(line.substr(0, sep=line.find('=')));
         if (sep == line.npos) throw_str("%s:%d Missing '=' after key", path.c_str(), n);
 
-        config[key] = trim(line.substr(sep+1));
+        (*section)[key] = trim(line.substr(sep+1));
     }
     return config;
 }
