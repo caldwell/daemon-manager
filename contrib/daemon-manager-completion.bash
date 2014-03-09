@@ -7,6 +7,7 @@ _dmctl()
     if (($COMP_CWORD == 1)); then
         local IFS=$',' # "dmctl list" outputs comma separated list of daemons
         # Remove user's own prefix from the daemon name. But leave it in for other user's they may control
+        # Also include the commands that take no id (status, rescan)
         local all=( $(dmctl list | sed -e "s,$USER/,,g") \
                     $(dmctl --help | awk '/dmctl/ { print gensub("\\|",",","g",$3 ? "" : $2) }') )
     else
