@@ -3,10 +3,10 @@
 if [ -x "/etc/init.d/daemon-manager" ]; then
 	update-rc.d daemon-manager defaults >/dev/null
 
-	# If daemon-manager is already running then we want to restart it so that it does it's re-exec() thing and
+	# If daemon-manager is already running then we want to reload it so that it does it's re-exec() thing and
 	# doesn't lose track of the currently running daemons.
 	if invoke-rc.d daemon-manager status > /dev/null; then
-    	invoke-rc.d daemon-manager restart || exit $?
+	invoke-rc.d daemon-manager reload || exit $?
     else
     	invoke-rc.d daemon-manager start || exit $?
     fi
