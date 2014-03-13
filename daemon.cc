@@ -184,6 +184,12 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
             *e++ = envs.front().c_str();
         }
         *e = NULL;
+
+        // Make the child a process group leader
+        if(setpgrp() == -1) {
+            throw_strerr("Couldn't become process group leader");
+        }
+
         execle("/bin/sh", "/bin/sh", "-c", command.c_str(), (char*)NULL, env);
         throw_strerr("Couldn't exec");
     } catch (std::exception &e) {
@@ -198,7 +204,8 @@ void daemon::stop()
 {
     if (current.pid) {
         log(LOG_INFO, "Stopping [%d] %s\n", current.pid, id.c_str());
-        kill(current.pid, SIGTERM);
+        // Stop the process group
+        kill(0 - current.pid, SIGTERM);
         current.state = stopping;
     }
     if (current.state == coolingdown)
