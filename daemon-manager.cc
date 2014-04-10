@@ -417,21 +417,20 @@ static int open_server_socket()
 
 static void distribute_signal_to_children(int sig)
 {
-    log(LOG_DEBUG, "Signal: %s [%d]\n", strsignal(sig), sig);
     kill(0, sig);
     exit(EXIT_FAILURE);
 }
 
+int child_mortality;
 static void handle_sig_child(int)
 {
-    log(LOG_DEBUG, "SIGCHLD\n");
+    child_mortality++;
 }
 
 bool hup_two_three_four;
 static void handle_sig_hup(int)
 {
     hup_two_three_four = true;
-    log(LOG_DEBUG, "SIGHUP\n");
 }
 
 static void select_loop(vector<user*> users, vector<class daemon*> daemons, int command_socket_fd)
@@ -451,8 +450,13 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
 
     while (1) {
         if (hup_two_three_four) {
+            log(LOG_DEBUG, "SIGHUP\n");
             hup_two_three_four = false;
             reincarnate(daemons);
+        }
+        if (child_mortality) {
+            log(LOG_DEBUG, "SIGCHILD\n");
+            child_mortality = 0;
         }
 
         struct pollfd fd[1/*command_socket*/ + clients.size()];
