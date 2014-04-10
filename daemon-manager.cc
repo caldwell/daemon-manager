@@ -415,10 +415,10 @@ static int open_server_socket()
     return command_socket;
 }
 
-static void distribute_signal_to_children(int sig)
+int time_to_die;
+static void handle_sig_term_or_int(int sig)
 {
-    kill(0, sig);
-    exit(EXIT_FAILURE);
+    time_to_die = sig;
 }
 
 int child_mortality;
@@ -436,8 +436,8 @@ static void handle_sig_hup(int)
 static void select_loop(vector<user*> users, vector<class daemon*> daemons, int command_socket_fd)
 {
     signal(SIGCHLD, handle_sig_child);
-    signal(SIGTERM, distribute_signal_to_children);
-    signal(SIGINT,  distribute_signal_to_children);
+    signal(SIGTERM, handle_sig_term_or_int);
+    signal(SIGINT,  handle_sig_term_or_int);
     signal(SIGHUP,  handle_sig_hup);
     signal(SIGPIPE, SIG_IGN);
     typedef map<int,user*>::iterator fd_map_it;
@@ -449,6 +449,7 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
         users_by_id[u->uid] = u;
 
     while (1) {
+        // Handle signals:
         if (hup_two_three_four) {
             log(LOG_DEBUG, "SIGHUP\n");
             hup_two_three_four = false;
@@ -457,6 +458,34 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
         if (child_mortality) {
             log(LOG_DEBUG, "SIGCHILD\n");
             child_mortality = 0;
+        }
+        if (time_to_die) {
+            log(LOG_INFO, "Shutting down due to %s.\n", time_to_die == SIGTERM ? "SIGTERM" : "SIGINT");
+            time_to_die = 0;
+
+            log(LOG_INFO, "Stopping all running daemons...\n");
+            int still_running=0;
+            foreach(class daemon *d, daemons)
+                if (d->current.state == running) {
+                    d->stop();
+                    still_running++;
+                }
+
+            log(LOG_INFO, "Waiting for daemons to stop...\n");
+            while (still_running) {
+                for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
+                    log(LOG_NOTICE, "Child %d exited\n", kid);
+                    foreach(class daemon *d, daemons)
+                        if (d->current.pid == kid) {
+                            d->reap();
+                            still_running--;
+                            break;
+                        }
+                }
+            }
+
+            log(LOG_INFO, "Terminating.\n");
+            exit(EXIT_SUCCESS);
         }
 
         struct pollfd fd[1/*command_socket*/ + clients.size()];
