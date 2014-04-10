@@ -459,35 +459,29 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
             log(LOG_DEBUG, "SIGCHILD\n");
             child_mortality = 0;
         }
-        if (time_to_die) {
+        if (time_to_die > 0) {
+            time_to_die = -1; // only print this stuff once.
             log(LOG_INFO, "Shutting down due to %s.\n", time_to_die == SIGTERM ? "SIGTERM" : "SIGINT");
-            time_to_die = 0;
 
             log(LOG_INFO, "Stopping all running daemons...\n");
-            int still_running=0;
-            foreach(class daemon *d, daemons)
-                if (d->current.state == running) {
+        }
+        if (time_to_die) {
+            // We re-stop running stuff every time through the main loop since dmctl may start something while
+            // we're waiting for something else to stop.
+            bool quiesced = true;
+            foreach(class daemon *d, daemons) {
+                if (d->current.state == running || d->current.state == coolingdown)
                     d->stop();
-                    still_running++;
-                }
-
-            log(LOG_INFO, "Waiting for daemons to stop...\n");
-            while (still_running) {
-                for (int kid; (kid = waitpid(-1, NULL, WNOHANG)) > 0;) {
-                    log(LOG_NOTICE, "Child %d exited\n", kid);
-                    foreach(class daemon *d, daemons)
-                        if (d->current.pid == kid) {
-                            d->reap();
-                            still_running--;
-                            break;
-                        }
-                }
+                if (d->current.state != stopped)
+                    quiesced = false;
             }
-
-            log(LOG_INFO, "Terminating.\n");
-            exit(EXIT_SUCCESS);
+            if (quiesced) {
+                log(LOG_INFO, "Terminating.\n");
+                exit(EXIT_SUCCESS);
+            }
         }
 
+        // Wait for something to happen.
         struct pollfd fd[1/*command_socket*/ + clients.size()];
         int nfds = 0;
 
