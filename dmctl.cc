@@ -282,7 +282,7 @@ COMMANDS
   'PAGER' environment variable is set, then it will be used to view the
   file. Otherwise 'less' will be used and if it is not found then 'more'
   will be used and, failing that, 'cat'.
-
+  +
   If this command is part of a pipeline, then 'cat' will always be used.
 
 *'<daemon-id>' tail*::
