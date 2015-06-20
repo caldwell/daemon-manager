@@ -1,0 +1,24 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Clean install didn't create ~/.daemon-manager tree
+desc: |-
+  Here's a log:
+      Jun 20 06:18:54 MichaelPi daemon-manager[23402]: [Warning] Ignoring michaelc: mkdir /home/michaelc/.daemon-manager/daemons failed: No such file or directory
+      Jun 20 06:18:54 MichaelPi daemon-manager[23402]: [Error] root can't manage non-existant user "michaelc"
+  
+  Clearly there's a chicken and egg problem here.
+  But if the user is listed in daemon-manager.conf then it should just create the dirs it needs.
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2015-06-20 09:00:00.375259 Z
+references: []
+
+id: 304724a2ea469b366011e1fdcb4cfa69445f1c37
+log_events: 
+- - 2015-06-20 09:00:00.375524 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
