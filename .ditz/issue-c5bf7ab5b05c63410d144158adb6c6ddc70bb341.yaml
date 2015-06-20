@@ -1,0 +1,24 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: dmctl from unauthorized user is silent to that user
+desc: |-
+  From an dmctl just returns with no prints to stderr or stdout. Completely silent.
+  Trying to duplicate this locally I get:
+      dmctl: No response from daemon-manager: Connection reset by peer
+  But on a clean raspbian install there was no message.
+  Got this in the log:
+      Jun 20 06:18:58 MichaelPi daemon-manager[23402]: [Warning] Command socket: Not authorized. "michaelc" (uid 1002) is not in the daemon-manager.conf file
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :unstarted
+disposition: 
+creation_time: 2015-06-20 09:04:51.816605 Z
+references: []
+
+id: c5bf7ab5b05c63410d144158adb6c6ddc70bb341
+log_events: 
+- - 2015-06-20 09:04:51.816838 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
