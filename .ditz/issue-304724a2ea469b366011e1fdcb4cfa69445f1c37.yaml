@@ -11,8 +11,8 @@ type: :bugfix
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2015-06-20 09:00:00.375259 Z
 references: []
 
@@ -22,3 +22,7 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2015-06-28 22:31:17.019699 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - Fixed by aa29d91aec8c122f287736d8c7f43db73e385236
