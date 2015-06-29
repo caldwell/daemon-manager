@@ -13,6 +13,7 @@
 #include <poll.h>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <signal.h>
 #include "command-sock.h"
 #include "user.h"
 #include "stringutil.h"
@@ -42,6 +43,8 @@ int main(int argc, char **argv)
     if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
     if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+
+    signal(SIGPIPE, SIG_IGN);
 
     int command_socket;
     try {
