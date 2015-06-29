@@ -1,7 +1,7 @@
 --- !ditz.rubyforge.org,2008-03-06/issue 
 title: dmctl from unauthorized user is silent to that user
 desc: |-
-  From an dmctl just returns with no prints to stderr or stdout. Completely silent.
+  Running as unauthorized user, dmctl just returns with no prints to stderr or stdout. Completely silent.
   Trying to duplicate this locally I get:
       dmctl: No response from daemon-manager: Connection reset by peer
   But on a clean raspbian install there was no message.
@@ -51,3 +51,7 @@ log_events:
     
     So these problems are similar. In both cases it seems the server has spewed
     the error and closed the connection faster than dmctl is used to.
+- - 2015-06-29 00:49:32.372480 Z
+  - David Caldwell <david@porkrind.org>
+  - edited description
+  - ""
