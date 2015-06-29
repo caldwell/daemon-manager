@@ -79,19 +79,24 @@ int main(int argc, char **argv)
     }
 }
 
+static bool wait_response(int command_socket_fd, bool block)
+{
+    struct pollfd fd[1];
+    fd[0].fd = command_socket_fd;
+    fd[0].events = POLLIN;
+    int got = poll(fd, 1, block ? -1 : 0);
+    if (got < 0)  err(1, "Poll failed");
+    return got != 0;
+}
+
 static string do_command(string command, int command_socket_fd)
 {
     int wrote = write(command_socket_fd, command.c_str(), command.length());
     if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
 
-    // Wait for our response:
-    struct pollfd fd[1];
-    fd[0].fd = command_socket_fd;
-    fd[0].events = POLLIN;
-    int got = poll(fd, 1, -1);
-    if (got < 0)  err(1, "Poll failed");
-    if (got == 0) err(1, "Poll timed out.");
+    if (!wait_response(command_socket_fd, true))
+        err(1, "Poll timed out.");
 
     string out;
     while (1) {
