@@ -11,8 +11,8 @@ type: :bugfix
 component: dm
 release: 
 reporter: David Caldwell <david@porkrind.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2015-06-20 09:04:51.816605 Z
 references: []
 
@@ -63,3 +63,7 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - commented
   - "* 931d4c7 [dmctl.cc] Handle the case where daemon-manager closed the socket before we even wrote our command out."
+- - 2015-06-29 01:59:48.354865 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - Took 3 patches, but I believe this is fixed now.
