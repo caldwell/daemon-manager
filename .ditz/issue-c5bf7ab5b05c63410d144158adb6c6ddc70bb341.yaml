@@ -26,3 +26,28 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - commented
   - "* 4d6d483 [dmctl.cc] Ignore SIGPIPE (we check for errors instead)"
+- - 2015-06-29 00:46:49.873864 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    On Mac OS X I always get the messaage. On x86-64 Debian Linux I sometimes get:
+      dmctl: No response from daemon-manager: Connection reset by peer
+    
+    The strace says this:
+      write(3, "status ", 7)                  = 7
+      poll([{fd=3, events=POLLIN}], 1, 4294967295) = 1 ([{fd=3, revents=POLLIN}])
+      read(3, "ERR: Not authorized. \"nobody\" (u"..., 255) = 81
+      read(3, 0x7fff429b3160, 255)            = -1 ECONNRESET (Connection reset by peer)
+    
+    So the loop has read the good data and just needs to spit it out (ignoring
+    connection reset by peer in this case).
+    
+    On a Raspberry Pi install I'm getting this (once the SIGPIPE fix is
+    installed):
+      dmctl: Write to command fifo failed: Broken pipe
+    
+    The strace says this:
+      write(3, "status ", 7)                  = -1 EPIPE (Broken pipe)
+    
+    So these problems are similar. In both cases it seems the server has spewed
+    the error and closed the connection faster than dmctl is used to.
