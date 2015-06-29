@@ -98,6 +98,7 @@ static string do_command(string command, int command_socket_fd)
         char buf[256];
         int red = read(command_socket_fd, buf, sizeof(buf)-1);
         if (red == 0 || red < 0 && errno == EAGAIN) break; // done.
+        if (red < 0 && errno == ECONNRESET && !out.empty()) break; // Don't whine if they sent a message but our next tentative read got closed down.
         if (red < 0)   err(1, "No response from daemon-manager");
         out.append(buf, red);
     }
