@@ -22,3 +22,7 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - created
   - ""
+- - 2015-06-29 00:39:10.513051 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 4d6d483 [dmctl.cc] Ignore SIGPIPE (we check for errors instead)"
