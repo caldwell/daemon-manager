@@ -59,3 +59,7 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - commented
   - "* 3cbb952 [dmctl.cc] Ignore ECONNRESET on 2nd read when we've already gotten a response."
+- - 2015-06-29 01:58:36.222670 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 931d4c7 [dmctl.cc] Handle the case where daemon-manager closed the socket before we even wrote our command out."
