@@ -92,8 +92,16 @@ static bool wait_response(int command_socket_fd, bool block)
 static string do_command(string command, int command_socket_fd)
 {
     int wrote = write(command_socket_fd, command.c_str(), command.length());
-    if (wrote < 0) err(1, "Write to command fifo failed");
     if (!wrote)   errx(1, "Write to command fifo failed.");
+    if (wrote < 0) {
+        // If daemon-manager is fast it could have already spewed an error at us and closed the connection, causing our write to fail.
+        // To detect this we see if there's something for us to read on the socket. If not, then the error was legit--report it.
+        int saved_errno = errno;
+        if (!wait_response(command_socket_fd, false)) {
+            errno = saved_errno;
+            err(1, "Write to command fifo failed");
+        }
+    }
 
     if (!wait_response(command_socket_fd, true))
         err(1, "Poll timed out.");
