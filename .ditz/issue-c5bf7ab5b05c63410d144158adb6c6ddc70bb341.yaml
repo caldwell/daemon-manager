@@ -55,3 +55,7 @@ log_events:
   - David Caldwell <david@porkrind.org>
   - edited description
   - ""
+- - 2015-06-29 01:57:17.434818 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 3cbb952 [dmctl.cc] Ignore ECONNRESET on 2nd read when we've already gotten a response."
