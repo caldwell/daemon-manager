@@ -13,6 +13,7 @@
 #include <poll.h>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <signal.h>
 #include "command-sock.h"
 #include "user.h"
 #include "stringutil.h"
@@ -42,6 +43,8 @@ int main(int argc, char **argv)
     if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
     if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+
+    signal(SIGPIPE, SIG_IGN);
 
     int command_socket;
     try {
@@ -76,25 +79,39 @@ int main(int argc, char **argv)
     }
 }
 
-static string do_command(string command, int command_socket_fd)
+static bool wait_response(int command_socket_fd, bool block)
 {
-    int wrote = write(command_socket_fd, command.c_str(), command.length());
-    if (wrote < 0) err(1, "Write to command fifo failed");
-    if (!wrote)   errx(1, "Write to command fifo failed.");
-
-    // Wait for our response:
     struct pollfd fd[1];
     fd[0].fd = command_socket_fd;
     fd[0].events = POLLIN;
-    int got = poll(fd, 1, -1);
+    int got = poll(fd, 1, block ? -1 : 0);
     if (got < 0)  err(1, "Poll failed");
-    if (got == 0) err(1, "Poll timed out.");
+    return got != 0;
+}
+
+static string do_command(string command, int command_socket_fd)
+{
+    int wrote = write(command_socket_fd, command.c_str(), command.length());
+    if (!wrote)   errx(1, "Write to command fifo failed.");
+    if (wrote < 0) {
+        // If daemon-manager is fast it could have already spewed an error at us and closed the connection, causing our write to fail.
+        // To detect this we see if there's something for us to read on the socket. If not, then the error was legit--report it.
+        int saved_errno = errno;
+        if (!wait_response(command_socket_fd, false)) {
+            errno = saved_errno;
+            err(1, "Write to command fifo failed");
+        }
+    }
+
+    if (!wait_response(command_socket_fd, true))
+        err(1, "Poll timed out.");
 
     string out;
     while (1) {
         char buf[256];
         int red = read(command_socket_fd, buf, sizeof(buf)-1);
         if (red == 0 || red < 0 && errno == EAGAIN) break; // done.
+        if (red < 0 && errno == ECONNRESET && !out.empty()) break; // Don't whine if they sent a message but our next tentative read got closed down.
         if (red < 0)   err(1, "No response from daemon-manager");
         out.append(buf, red);
     }
@@ -282,7 +299,7 @@ COMMANDS
   'PAGER' environment variable is set, then it will be used to view the
   file. Otherwise 'less' will be used and if it is not found then 'more'
   will be used and, failing that, 'cat'.
-
+  +
   If this command is part of a pipeline, then 'cat' will always be used.
 
 *'<daemon-id>' tail*::

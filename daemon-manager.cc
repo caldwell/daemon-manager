@@ -415,30 +415,29 @@ static int open_server_socket()
     return command_socket;
 }
 
-static void distribute_signal_to_children(int sig)
+int time_to_die;
+static void handle_sig_term_or_int(int sig)
 {
-    log(LOG_DEBUG, "Signal: %s [%d]\n", strsignal(sig), sig);
-    kill(0, sig);
-    exit(EXIT_FAILURE);
+    time_to_die = sig;
 }
 
+int child_mortality;
 static void handle_sig_child(int)
 {
-    log(LOG_DEBUG, "SIGCHLD\n");
+    child_mortality++;
 }
 
 bool hup_two_three_four;
 static void handle_sig_hup(int)
 {
     hup_two_three_four = true;
-    log(LOG_DEBUG, "SIGHUP\n");
 }
 
 static void select_loop(vector<user*> users, vector<class daemon*> daemons, int command_socket_fd)
 {
     signal(SIGCHLD, handle_sig_child);
-    signal(SIGTERM, distribute_signal_to_children);
-    signal(SIGINT,  distribute_signal_to_children);
+    signal(SIGTERM, handle_sig_term_or_int);
+    signal(SIGINT,  handle_sig_term_or_int);
     signal(SIGHUP,  handle_sig_hup);
     signal(SIGPIPE, SIG_IGN);
     typedef map<int,user*>::iterator fd_map_it;
@@ -450,11 +449,39 @@ static void select_loop(vector<user*> users, vector<class daemon*> daemons, int 
         users_by_id[u->uid] = u;
 
     while (1) {
+        // Handle signals:
         if (hup_two_three_four) {
+            log(LOG_DEBUG, "SIGHUP\n");
             hup_two_three_four = false;
             reincarnate(daemons);
         }
+        if (child_mortality) {
+            log(LOG_DEBUG, "SIGCHILD\n");
+            child_mortality = 0;
+        }
+        if (time_to_die > 0) {
+            time_to_die = -1; // only print this stuff once.
+            log(LOG_INFO, "Shutting down due to %s.\n", time_to_die == SIGTERM ? "SIGTERM" : "SIGINT");
 
+            log(LOG_INFO, "Stopping all running daemons...\n");
+        }
+        if (time_to_die) {
+            // We re-stop running stuff every time through the main loop since dmctl may start something while
+            // we're waiting for something else to stop.
+            bool quiesced = true;
+            foreach(class daemon *d, daemons) {
+                if (d->current.state == running || d->current.state == coolingdown)
+                    d->stop();
+                if (d->current.state != stopped)
+                    quiesced = false;
+            }
+            if (quiesced) {
+                log(LOG_INFO, "Terminating.\n");
+                exit(EXIT_SUCCESS);
+            }
+        }
+
+        // Wait for something to happen.
         struct pollfd fd[1/*command_socket*/ + clients.size()];
         int nfds = 0;
 

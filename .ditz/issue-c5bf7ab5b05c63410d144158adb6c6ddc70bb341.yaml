@@ -1,0 +1,69 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: dmctl from unauthorized user is silent to that user
+desc: |-
+  Running as unauthorized user, dmctl just returns with no prints to stderr or stdout. Completely silent.
+  Trying to duplicate this locally I get:
+      dmctl: No response from daemon-manager: Connection reset by peer
+  But on a clean raspbian install there was no message.
+  Got this in the log:
+      Jun 20 06:18:58 MichaelPi daemon-manager[23402]: [Warning] Command socket: Not authorized. "michaelc" (uid 1002) is not in the daemon-manager.conf file
+type: :bugfix
+component: dm
+release: 
+reporter: David Caldwell <david@porkrind.org>
+status: :closed
+disposition: :fixed
+creation_time: 2015-06-20 09:04:51.816605 Z
+references: []
+
+id: c5bf7ab5b05c63410d144158adb6c6ddc70bb341
+log_events: 
+- - 2015-06-20 09:04:51.816838 Z
+  - David Caldwell <david@porkrind.org>
+  - created
+  - ""
+- - 2015-06-29 00:39:10.513051 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 4d6d483 [dmctl.cc] Ignore SIGPIPE (we check for errors instead)"
+- - 2015-06-29 00:46:49.873864 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - |-
+    On Mac OS X I always get the messaage. On x86-64 Debian Linux I sometimes get:
+      dmctl: No response from daemon-manager: Connection reset by peer
+    
+    The strace says this:
+      write(3, "status ", 7)                  = 7
+      poll([{fd=3, events=POLLIN}], 1, 4294967295) = 1 ([{fd=3, revents=POLLIN}])
+      read(3, "ERR: Not authorized. \"nobody\" (u"..., 255) = 81
+      read(3, 0x7fff429b3160, 255)            = -1 ECONNRESET (Connection reset by peer)
+    
+    So the loop has read the good data and just needs to spit it out (ignoring
+    connection reset by peer in this case).
+    
+    On a Raspberry Pi install I'm getting this (once the SIGPIPE fix is
+    installed):
+      dmctl: Write to command fifo failed: Broken pipe
+    
+    The strace says this:
+      write(3, "status ", 7)                  = -1 EPIPE (Broken pipe)
+    
+    So these problems are similar. In both cases it seems the server has spewed
+    the error and closed the connection faster than dmctl is used to.
+- - 2015-06-29 00:49:32.372480 Z
+  - David Caldwell <david@porkrind.org>
+  - edited description
+  - ""
+- - 2015-06-29 01:57:17.434818 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 3cbb952 [dmctl.cc] Ignore ECONNRESET on 2nd read when we've already gotten a response."
+- - 2015-06-29 01:58:36.222670 Z
+  - David Caldwell <david@porkrind.org>
+  - commented
+  - "* 931d4c7 [dmctl.cc] Handle the case where daemon-manager closed the socket before we even wrote our command out."
+- - 2015-06-29 01:59:48.354865 Z
+  - David Caldwell <david@porkrind.org>
+  - closed with disposition fixed
+  - Took 3 patches, but I believe this is fixed now.

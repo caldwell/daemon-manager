@@ -16,6 +16,7 @@ SYNOPSIS
   user=nobody                  # Who to run as      default: the user
   output=log                   # "log" or "discard" default: discard
   autostart=no                 # "yes" or "no"      default: yes
+  export VAR=value             # Set env variable "VAR" to "value"
 
 DESCRIPTION
 -----------

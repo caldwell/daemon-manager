@@ -37,8 +37,10 @@ void user::init(struct passwd *p)
 
 void user::create_dirs()
 {
-    if (uid != 0) // Don't create /etc/daemon-manager. Package manager should do that.
+    if (uid != 0) { // Don't create /etc/daemon-manager. Package manager should do that.
+        mkdir_ug(homedir + "/.daemon-manager", 0750, uid, gid);
         mkdir_ug(config_path().c_str(), 0750, uid, gid);
+    }
 }
 
 string user::config_path()
