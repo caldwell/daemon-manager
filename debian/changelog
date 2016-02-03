@@ -1,3 +1,14 @@
+daemon-manager (1.0) unstable; urgency=medium
+
+  * New Upstream release:
+
+    * Fix deadlock in signal handler.
+
+    * Fix race conditions that prevented error messages from displaying in
+      dmctl.
+
+ -- David Caldwell <david@porkrind.org>  Thu, 15 Oct 2015 19:38:58 -0700
+
 daemon-manager (0.99.1) unstable; urgency=medium
 
   * New Upstream release:
