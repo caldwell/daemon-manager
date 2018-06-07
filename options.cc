@@ -101,7 +101,7 @@ bool options::bad_args()
 
     for (vector<string>::iterator a = args.begin(); a != args.begin()+end; a++)
         if (a->size() && a->at(0) == '-') {
-            fprintf(stderr, "Unkown argument \"%s\"\n", a->c_str());
+            fprintf(stderr, "Unknown argument \"%s\"\n", a->c_str());
             is_bad = true;
         }
     return bad.size() || is_bad;
@@ -151,7 +151,7 @@ int main(int c, char **v)
      > Bad args! 
    * -a=short
     2> missing argument for -a
-    2> Unkown argument "-=hort"
+    2> Unknown argument "-=hort"
      > Short Bad args! Extra: -=hort
    * -a 1 -- -s -ccc --long-arg
      > Short-Arg=1 Extra: -s -ccc --long-arg
