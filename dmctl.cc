@@ -28,7 +28,8 @@ static void usage(char *me, int exit_code)
            "\t%s list|rescan\n"
            "\t%s [<daemon-id>] status\n"
            "\t%s <daemon-id> start|stop|restart\n"
-           "\t%s <daemon-id> log|tail\n", me, me, me, me);
+           "\t%s <daemon-id> log|tail\n"
+           "\t%s <daemon-id> kill -SIGNAL\n", me, me, me, me, me);
     exit(exit_code);
 }
 
@@ -36,13 +37,15 @@ static string do_command(string command, int command_socket_fd);
 static string canonify(string id, int command_socket_fd);
 static void do_log(string id, int command_socket_fd);
 static void do_tail(string id, int command_socket_fd);
+static void do_kill(options o, string id, int command_socket_fd);
 
 int main(int argc, char **argv)
 {
-    options o(argc, argv);
+    options o(argc, argv, argc > 2 && strcmp(argv[2], "kill") == 0 ? 2 : -1);
     if (o.get("version"))   { printf("dmctl version " VERSION "\n"); exit(EXIT_SUCCESS); }
     if (o.get("help", 'h')) usage(argv[0], EXIT_SUCCESS);
-    if (o.bad_args() || o.args.size() > 2) usage(argv[0], EXIT_FAILURE);
+    unsigned max_args = o.args.size() > 2 && o.args[1] == "kill" ? 3 : 2;
+    if (o.bad_args() || o.args.size() > max_args) usage(argv[0], EXIT_FAILURE);
 
     signal(SIGPIPE, SIG_IGN);
 
@@ -61,13 +64,15 @@ int main(int argc, char **argv)
     string command = o.args.size() == 0 ? "status"  :
                      o.args.size() == 1 ? o.args[0] :
                                           o.args[1];
-    string id = o.args.size() == 2 ? canonify(o.args[0], command_socket) : "";
+    string id = o.args.size() > 1 ? canonify(o.args[0], command_socket) : "";
 
     try {
         if      (command == "log")
             do_log(id, command_socket);
         else if (command == "tail")
             do_tail(id, command_socket);
+        else if (command == "kill")
+            do_kill(o, id, command_socket);
         else {
             string resp = do_command(command + string(" ") + id, command_socket); /* The daemon still takes args the old way ("start <daemon-id>"). */
             printf("%s", resp.c_str());
@@ -193,6 +198,26 @@ static void do_tail(string id, int command_socket_fd)
     throw_str("Couldn't run \"tail -f\" on %s", log_file.c_str());
 }
 
+static void do_kill(options o, string id, int command_socket_fd)
+{
+    if (id == "") throw_str("\"kill\" needs an argument");
+    std::map<string, int> signals = {{"HUP",  SIGHUP} , {"INT",  SIGINT} , {"QUIT", SIGQUIT}, {"KILL", SIGKILL}, {"TERM", SIGTERM},
+                                     {"STOP", SIGSTOP}, {"CONT", SIGCONT}, {"INFO", SIGINFO}, {"USR1", SIGUSR1}, {"USR2", SIGUSR2}};
+    int signum=0;
+    try {
+        size_t l = o.args[2].length();
+        if (!signum && l > 0) signum = signals[o.args[2]];               // kill HUP
+        if (!signum && l > 2) signum = signals[o.args[2].substr(3)];     // kill SIGHUP
+        if (!signum && l > 1) signum = signals[o.args[2].substr(1)];     // kill -HUP
+        if (!signum && l > 4) signum = signals[o.args[2].substr(4)];     // kill -SIGHUP
+        if (!signum && l > 1) signum = stoul(o.args[2].substr(1), NULL); // kill -3
+        if (signum <= 0) throw_str("Bad signal %d", signum);
+    } catch(std::exception &e) {
+        throw_str("Unsupported signal \"%s\" (%s)", o.args[2].c_str(), e.what());
+    }
+    do_command(strprintf("kill-%d %s", signum, id.c_str()), command_socket_fd);
+}
+
 /* Magic quoting to transition to asciidoc mode
 ////
 
@@ -210,6 +235,7 @@ SYNOPSIS
   dmctl [<daemon-id>] status
   dmctl <daemon-id> start|stop|restart
   dmctl <daemon-id> log|tail
+  dmctl <daemon-id> kill -SIGNAL
 
 DESCRIPTION
 -----------
@@ -306,6 +332,18 @@ COMMANDS
 
   This runs "tail -f" on the log file of the daemon identified by
   <daemon-id>.
+
+*'<daemon-id>' kill '-<signal>'*::
+
+  This sends signal specified by <signal> to the daemon identified by
+  <daemon-id>. The signal can be numeric or a string in the same form that
+  'kill(1)' takes. For example, the following are all equivalent:
+
+    dmctl mydaemon kill -9
+    dmctl mydaemon kill -KILL
+    dmctl mydaemon kill -SIGKILL
+    dmctl mydaemon kill KILL
+    dmctl mydaemon kill SIGKILL
 
 
 SEE ALSO
