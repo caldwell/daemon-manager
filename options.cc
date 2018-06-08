@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org>
+//  Copyright (c) 2010-2018 David Caldwell <david@porkrind.org>
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 
 #include "options.h"
@@ -19,10 +19,10 @@ class option_match {
             }
 };
 
-options::options(int c, char **v)
+options::options(int c, char **v, size_t _end)
 {
     v++; c--;
-    end = -1;
+    end = _end;
     for (int i=0; i<c; i++)
         if (string(v[i]) == "--" && end == (size_t) -1)
             end = i;
@@ -101,7 +101,7 @@ bool options::bad_args()
 
     for (vector<string>::iterator a = args.begin(); a != args.begin()+end; a++)
         if (a->size() && a->at(0) == '-') {
-            fprintf(stderr, "Unkown argument \"%s\"\n", a->c_str());
+            fprintf(stderr, "Unknown argument \"%s\"\n", a->c_str());
             is_bad = true;
         }
     return bad.size() || is_bad;
@@ -151,7 +151,7 @@ int main(int c, char **v)
      > Bad args! 
    * -a=short
     2> missing argument for -a
-    2> Unkown argument "-=hort"
+    2> Unknown argument "-=hort"
      > Short Bad args! Extra: -=hort
    * -a 1 -- -s -ccc --long-arg
      > Short-Arg=1 Extra: -s -ccc --long-arg

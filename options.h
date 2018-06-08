@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Copyright (c) 2010-2018 David Caldwell <david@porkrind.org> -*- c++ -*-
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __OPTIONS_H__
 #define __OPTIONS_H__
@@ -10,7 +10,7 @@ enum arg_type { arg_none, arg_required, /* arg_optional not supported yet */ };
 
 class options {
   public:
-    options(int c, char **v);
+    options(int c, char **v, size_t end = -1);
     bool get(std::string long_opt, char short_opt, arg_type type = arg_none);
     bool get(std::string long_opt, arg_type type = arg_none);
     std::vector<std::string> argm; // after get this is set to an array of all the options of that type
