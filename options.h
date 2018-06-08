@@ -10,7 +10,7 @@ enum arg_type { arg_none, arg_required, /* arg_optional not supported yet */ };
 
 class options {
   public:
-    options(int c, char **v);
+    options(int c, char **v, size_t end = -1);
     bool get(std::string long_opt, char short_opt, arg_type type = arg_none);
     bool get(std::string long_opt, arg_type type = arg_none);
     std::vector<std::string> argm; // after get this is set to an array of all the options of that type

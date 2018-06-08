@@ -19,10 +19,10 @@ class option_match {
             }
 };
 
-options::options(int c, char **v)
+options::options(int c, char **v, size_t _end)
 {
     v++; c--;
-    end = -1;
+    end = _end;
     for (int i=0; i<c; i++)
         if (string(v[i]) == "--" && end == (size_t) -1)
             end = i;
