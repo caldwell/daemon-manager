@@ -202,7 +202,11 @@ static void do_kill(options o, string id, int command_socket_fd)
 {
     if (id == "") throw_str("\"kill\" needs an argument");
     std::map<string, int> signals = {{"HUP",  SIGHUP} , {"INT",  SIGINT} , {"QUIT", SIGQUIT}, {"KILL", SIGKILL}, {"TERM", SIGTERM},
-                                     {"STOP", SIGSTOP}, {"CONT", SIGCONT}, {"INFO", SIGINFO}, {"USR1", SIGUSR1}, {"USR2", SIGUSR2}};
+                                     {"STOP", SIGSTOP}, {"CONT", SIGCONT}, {"USR1", SIGUSR1}, {"USR2", SIGUSR2},
+                                     #ifdef SIGINFO
+                                     {"INFO", SIGINFO} /* Darwin has and uses this */
+                                     #endif
+    };
     int signum=0;
     try {
         size_t l = o.args[2].length();
