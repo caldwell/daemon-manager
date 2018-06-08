@@ -627,7 +627,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     string arg = space != command_line.npos ? command_line.substr(space+1, command_line.length()) : "";
     log(LOG_DEBUG, "line: \"%s\" cmd: \"%s\", arg: \"%s\"\n", command_line.c_str(), cmd.c_str(), arg.c_str());
 
-    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile" };
+    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile", "pid" };
 
     if (find(valid_commands, valid_commands + lengthof(valid_commands), cmd) == valid_commands + lengthof(valid_commands))
         throw_str("bad command \"%s\"", cmd.c_str());
@@ -673,6 +673,8 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
     else if (cmd == "logfile") return "OK: " + daemon->log_file();
+    else if (cmd == "pid")     if (!daemon->current.pid) throw_str("\"%s\" isn't running", daemon->id.c_str());
+                               else return strprintf("OK: %d\n", daemon->current.pid);
     else throw_str("bad command \"%s\"", cmd.c_str());
     if (!daemon->whine_list.empty())
         return "OK: " + daemon->get_and_clear_whines();
