@@ -45,11 +45,10 @@ BIN_DIR  = $(PREFIX)/bin
 MAN_DIR  = $(PREFIX)/share/man
 
 install: all
-	cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
-	cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
-	cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
-	cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
-
+	mkdir -p $(DESTDIR)$(SBIN_DIR);     cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
+	mkdir -p $(DESTDIR)$(BIN_DIR);      cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
+	mkdir -p $(DESTDIR)$(MAN_DIR)/man1; cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
+	mkdir -p $(DESTDIR)$(MAN_DIR)/man5; cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
 	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
 	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
 
