@@ -45,13 +45,11 @@ BIN_DIR  = $(PREFIX)/bin
 MAN_DIR  = $(PREFIX)/share/man
 
 install: all
-	cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
-	cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
-	cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
-	cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
-
-	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
-	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
+	install -p $(SBIN) -Dt $(DESTDIR)$(SBIN_DIR)
+	install -p $(BIN)  -Dt $(DESTDIR)$(BIN_DIR)
+	install -p $(MAN1) -Dt $(DESTDIR)$(MAN_DIR)/man1
+	install -p $(MAN5) -Dt $(DESTDIR)$(MAN_DIR)/man5
+	install -m 600 -o 0 -g 0 daemon-manager.conf.basic -D $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
 
 TAGS: *.c *.h *.cc
 	find . -name "*.[ch]" | etags -
