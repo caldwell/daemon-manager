@@ -24,7 +24,7 @@ MAN5=daemon.conf.5 daemon-manager.conf.5
 man: $(MAN1) $(MAN5)
 all: man
 
-ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation"
+ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation" --no-xmllint
 
 %.1 : %.cc
 	a2x $(ASCIIDOC_FLAGS) -f manpage $<
