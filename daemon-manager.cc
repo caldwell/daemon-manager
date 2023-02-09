@@ -608,11 +608,11 @@ static string daemon_id_list(vector<class daemon*> daemons)
 static string elapsed(time_t seconds)
 {
     std::list<string> s;
-                 s.push_front(strprintf("%lds", seconds % 60)); seconds /= 60;
-    if (seconds) s.push_front(strprintf("%ldm", seconds % 60)); seconds /= 60;
-    if (seconds) s.push_front(strprintf("%ldh", seconds % 24)); seconds /= 24;
-    if (seconds) s.push_front(strprintf("%ldd", seconds %  7)); seconds /=  7;
-    if (seconds) s.push_front(strprintf("%ldw", seconds     ));
+                 {s.push_front(strprintf("%lds", seconds % 60));} seconds /= 60;
+    if (seconds) {s.push_front(strprintf("%ldm", seconds % 60));} seconds /= 60;
+    if (seconds) {s.push_front(strprintf("%ldh", seconds % 24));} seconds /= 24;
+    if (seconds) {s.push_front(strprintf("%ldd", seconds %  7));} seconds /=  7;
+    if (seconds) {s.push_front(strprintf("%ldw", seconds     ));}
 
     s.resize(2);
     return join(s, "");
