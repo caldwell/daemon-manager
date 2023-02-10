@@ -646,10 +646,10 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     }
 
     if (cmd == "status") {
-        string resp = strprintf("%-30s %-15s %6s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
+        string resp = strprintf("%-30s %-15s %9s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
         foreach(class daemon *d, manageable)
           if (arg.empty() || arg == d->id)
-            resp += strprintf("%-30s %-15s %6d %8zd %8s %8s %8s\n",
+            resp += strprintf("%-30s %-15s %9d %8zd %8s %8s %8s\n",
                               d->id.c_str(),
                               d->state_str().c_str(),
                               d->current.pid,
