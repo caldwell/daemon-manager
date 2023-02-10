@@ -20,7 +20,6 @@ class user {
     vector<user*> manages;
 
     user(string name);
-    user(uid_t uid);
     void create_dirs();
     string config_path();
     string log_dir();

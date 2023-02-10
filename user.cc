@@ -20,13 +20,6 @@ user::user(string name)
     init(p);
 }
 
-user::user(uid_t uid)
-{
-    struct passwd *p = getpwuid(uid);
-    if (!p) throw_str("No user with uid %d", uid);
-    init(p);
-}
-
 void user::init(struct passwd *p)
 {
     name = string(p->pw_name);
