@@ -6,9 +6,11 @@ all: $(SBIN) $(BIN)
 
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o json-escape.o command-sock.o peercred.o
 
+COMMAND_SOCKET_PATH ?= "/var/run/daemon-manager.sock"
+
 dmctl daemon-manager: CC=g++
 dmctl daemon-manager: CXXFLAGS += -std=c++11 -MMD -g -Wall -Wextra -Wno-parentheses
-dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\"
+dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\" -DCOMMAND_SOCKET_PATH=\"$(COMMAND_SOCKET_PATH)\"
 dmctl daemon-manager: LDFLAGS  += -g
 
 dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o posix-util.o command-sock.o
