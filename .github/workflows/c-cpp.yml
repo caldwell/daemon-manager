@@ -10,6 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@3v
+    - name: Install Dependencies
+      run: apt install asciidoc
     - name: make
       run: make
