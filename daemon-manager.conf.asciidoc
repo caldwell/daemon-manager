@@ -48,6 +48,8 @@ and
 
   [manages]
 
+=== '[can_run_as]'
+
 The 'can_run_as' section identifies which users are allowed to launch daemons. It
 looks like this:
 
@@ -65,6 +67,8 @@ section:
 A trailing `:' is also acceptable:
 
   bob:
+
+=== '[manages]'
 
 The 'manages' section allows the system administrator to appoint users that
 can start and stop daemons on behalf of other users. It has the same syntax as
