@@ -12,6 +12,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install Dependencies
-      run: apt install asciidoc
+      run: sudo apt install asciidoc
     - name: make
       run: make
