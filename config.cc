@@ -6,6 +6,7 @@
 #include "uniq.h"
 #include "stringutil.h"
 #include "log.h"
+#include "foreach.h"
 #include <grp.h>
 #include <iostream>
 #include <fstream>
@@ -122,4 +123,20 @@ struct daemon_config parse_daemon_config(string path)
         (*section)[key] = trim(line.substr(sep+1));
     }
     return config;
+}
+
+list<string> validate_keys(map<string,string> cfg, const string &file, const vector<string> &valid_keys)
+{
+    std::list<string> whine_list;
+    typedef pair<string,string> str_pair;
+    foreach(str_pair c, cfg) {
+        foreach(const string &key, valid_keys)
+            if (c.first == key) goto found;
+        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), file.c_str());
+            log(LOG_WARNING, "%s", warning.c_str());
+          whine_list.push_back("Warning: "+warning);
+        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
+      found:;
+    }
+    return whine_list;
 }

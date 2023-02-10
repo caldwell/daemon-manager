@@ -56,18 +56,7 @@ void daemon::load_config()
     config.environment = config_in.env;
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
-    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "shell" };
-    typedef pair<string,string> str_pair;
-    foreach(str_pair c, cfg) {
-        foreach(const char *key, valid_keys)
-            if (c.first == key) goto found;
-        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
-          log(LOG_WARNING, "%s", warning.c_str());
-          whine_list.push_back("Warning: "+warning);
-        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
-      found:;
-    }
-
+    whine_list = validate_keys(cfg, config_file, { "dir", "user", "start", "autostart", "output", "shell" });
 
     config.working_dir = cfg.count("dir") ? cfg["dir"] : "/";
     pwent pw = pwent(cfg.count("user") ? cfg["user"] : user->name);

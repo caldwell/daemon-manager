@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <list>
 
 using namespace std;
 
@@ -24,6 +25,7 @@ typedef vector<string>::iterator config_list_it;
 
 struct master_config parse_master_config(string path);
 struct daemon_config parse_daemon_config(string path);
+list<string> validate_keys(map<string,string> cfg, const string &file, const vector<string> &valid_keys);
 
 #endif /* __MASTER_CONFIG_H__ */
 
