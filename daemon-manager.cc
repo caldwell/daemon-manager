@@ -627,7 +627,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     string arg = space != command_line.npos ? command_line.substr(space+1, command_line.length()) : "";
     log(LOG_DEBUG, "line: \"%s\" cmd: \"%s\", arg: \"%s\"\n", command_line.c_str(), cmd.c_str(), arg.c_str());
 
-    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile", "configfile", "pid" };
+    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile", "configfile", "pid", "export" };
 
     if (find(valid_commands, valid_commands + lengthof(valid_commands), cmd) == valid_commands + lengthof(valid_commands) && cmd.compare(0,5,"kill-") != 0)
         throw_str("bad command \"%s\"", cmd.c_str());
@@ -662,6 +662,18 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         foreach(class daemon *d, new_daemons)
             fine_whines += d->get_and_clear_whines();
         return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n" + fine_whines;
+    }
+
+    if (cmd == "export") {
+        if (user->uid != 0) throw_str("Only root can export.");
+        char *buf;
+        size_t size;
+        FILE *f = open_memstream(&buf, &size);
+        export_daemons(*daemons, f);
+        fclose(f);
+        string resp = string("OK: ").append(buf, size);
+        free(buf);
+        return resp;
     }
 
     vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
