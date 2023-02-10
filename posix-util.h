@@ -7,6 +7,7 @@
 
 bool exists(std::string path);
 void mkdir_ug(std::string path, mode_t mode, int uid=-1, int gid=-1);
+void mkdir_pug(std::string base, std::string subdirs, mode_t mode, int uid=-1, int gid=-1);
 
 #endif /* __POSIX_UTIL_H__ */
 
