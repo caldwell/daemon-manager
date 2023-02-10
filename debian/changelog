@@ -1,3 +1,13 @@
+daemon-manager (1.2) unstable; urgency=medium
+
+  * New Upstream release:
+
+    * Added `edit` command to dmctl to edit a daemon's config file.
+
+    * Added some configuration settings for daemon paths.
+
+ -- David Caldwell <david@porkrind.org>  Fri, 10 Feb 2023 03:32:04 -0800
+
 daemon-manager (1.1) unstable; urgency=medium
 
   * New Upstream release:
