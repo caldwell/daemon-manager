@@ -69,11 +69,54 @@ that the program wouldn't be specific to just FastCGI daemons, but that
 there were many use cases for daemons that a user might want to run as
 themselves (or another non-privileged user) and control themselves.
 
+Building and testing from Git
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You need a C++11 compiler installed to build.
+
+  make
+
+That should build the `daemon-manager` and `dmctl` binaries.
+
+If you want to build the man pages you'll need [AsciiDoc](https://asciidoc.org)
+installed. On a Debian or Ubuntu system shhould be as easy as:
+
+  sudo apt install asciidoc
+
+On macOS, get [Homebrew](https://brew.sh) and then:
+
+  brew install asciidoc
+
+Once it is installed you can build with:
+
+  make man
+
+If you're testing locally you'll want to build like this:
+
+  make COMMAND_SOCKET_PATH=./test.socket
+
+Otherwise it will use the default global location for the socket
+(`/var/run/daemon-manager.socket`).
+
+It's also recommended to create a test config file and set the paths like:
+
+  [settings]
+  daemon-path-daemon      = ./test-daemons/%username%/daemons
+  daemon-path-log         = ./test-daemons/%username%/logs
+  daemon-path-daemon-root = ./test-daemons/root/daemons
+  daemon-path-log-root    = ./test-daemons/root/log
+
+That way the local tests will be cordoned off.
+
+NOTE: daemon-manager normally expects to run as root. A lot of code paths break
+when it is not run as root (e.g. daemons won't launch because setuid
+fails). Even the test file needs to be root owned or the permissions check will
+fail and it will fail to launch.
 
 Author, Copyright, and License
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Copyright © 2010-2018 by David Caldwell <david@porkrind.org>
+Copyright © 2010-2023 by David Caldwell <david@porkrind.org>
 
 Daemon Manager is licensed under the GNU General Public License (v3.0). See
 the LICENSE file for details.

@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2018 David Caldwell <david@porkrind.org>
+//  Copyright (c) 2010-2023 David Caldwell <david@porkrind.org>
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 ////
 
@@ -29,7 +29,8 @@ static void usage(char *me, int exit_code)
            "\t%s [<daemon-id>] status\n"
            "\t%s <daemon-id> start|stop|restart\n"
            "\t%s <daemon-id> log|tail\n"
-           "\t%s <daemon-id> kill -SIGNAL\n", me, me, me, me, me);
+           "\t%s <daemon-id> edit\n"
+           "\t%s <daemon-id> kill -SIGNAL\n", me, me, me, me, me, me);
     exit(exit_code);
 }
 
@@ -37,6 +38,7 @@ static string do_command(string command, int command_socket_fd);
 static string canonify(string id, int command_socket_fd);
 static void do_log(string id, int command_socket_fd);
 static void do_tail(string id, int command_socket_fd);
+static void do_edit(string id, int command_socket_fd);
 static void do_kill(options o, string id, int command_socket_fd);
 
 int main(int argc, char **argv)
@@ -71,6 +73,8 @@ int main(int argc, char **argv)
             do_log(id, command_socket);
         else if (command == "tail")
             do_tail(id, command_socket);
+        else if (command == "edit")
+            do_edit(id, command_socket);
         else if (command == "kill")
             do_kill(o, id, command_socket);
         else {
@@ -196,6 +200,18 @@ static void do_tail(string id, int command_socket_fd)
 
     execlp("tail", "tail", "-f", log_file.c_str(), NULL);
     throw_str("Couldn't run \"tail -f\" on %s", log_file.c_str());
+}
+
+static void do_edit(string id, int command_socket_fd)
+{
+    if (id == "") throw_str("\"edit\" needs an argument");
+    string config_file = chomp(do_command("configfile "+id, command_socket_fd));
+
+    const char *editor = getenv("VISUAL");
+    if (!editor) editor = getenv("EDITOR");
+    if (!editor) editor = "vi";
+    execlp("/bin/sh", "/bin/sh", "-c", (string(editor) + " \"$1\"").c_str(), "--", config_file.c_str(), NULL);
+    throw_str("Couldn't run \"%s\" on %s", editor, config_file.c_str());
 }
 
 static void do_kill(options o, string id, int command_socket_fd)

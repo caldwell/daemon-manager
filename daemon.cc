@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org>
+//  Copyright (c) 2010-2023 David Caldwell <david@porkrind.org>
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 
 #include "daemon.h"
@@ -56,18 +56,7 @@ void daemon::load_config()
     config.environment = config_in.env;
 
     // Look up all the keys and warn if we don't recognize them. Helps find typos in .conf files.
-    const char *valid_keys[] = { "dir", "user", "start", "autostart", "output", "shell" };
-    typedef pair<string,string> str_pair;
-    foreach(str_pair c, cfg) {
-        foreach(const char *key, valid_keys)
-            if (c.first == key) goto found;
-        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), config_file.c_str());
-          log(LOG_WARNING, "%s", warning.c_str());
-          whine_list.push_back("Warning: "+warning);
-        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
-      found:;
-    }
-
+    whine_list = validate_keys(cfg, config_file, { "dir", "user", "start", "autostart", "output", "shell" });
 
     config.working_dir = cfg.count("dir") ? cfg["dir"] : "/";
     pwent pw = pwent(cfg.count("user") ? cfg["user"] : user->name);
@@ -147,7 +136,6 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
     try {
         close(fd[0]);
         if (config.log_output) {
-            mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
             string logfile = log_file();

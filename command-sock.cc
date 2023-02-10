@@ -1,4 +1,4 @@
-//  Copyright (c) 2014 David Caldwell,  All Rights Reserved.
+//  Copyright (c) 2014-2023 David Caldwell,  All Rights Reserved.
 
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -16,5 +16,5 @@ struct sockaddr_un sock_addr(std::string socket_path)
 
 struct sockaddr_un command_sock_addr()
 {
-    return sock_addr("/var/run/daemon-manager.sock");
+    return sock_addr(COMMAND_SOCKET_PATH);
 }

@@ -10,6 +10,12 @@ daemon-manager.conf - Master configuration file for Daemon Manager
 
 SYNOPSIS
 --------
+  [settings]
+  daemon-path-daemon      = ~/.daemon-manager/daemons
+  daemon-path-log         = ~/.daemon-manager/logs
+  daemon-path-daemon-root = /etc/daemon-manager/daemons
+  daemon-path-log-root    = /var/log/daemon-manager
+
   # Example configuration file
   [can_run_as]
   user1: www-data
@@ -40,13 +46,46 @@ The config file is a plain text file. Comments are stripped from lines before
 they are parsed. A comment starts with a "#" and continues to the end of a
 line. Blank lines are ignored.
 
-The file consists of two sections designated by
+The file consists of one optional and two manditory sections designated by:
+
+  [settings]
 
   [can_run_as]
 
-and
-
   [manages]
+
+=== '[settings]'
+
+The 'settings' section is optional and supports the following settings (shown
+with their default values):
+
+  daemon-path-daemon      = ~/.daemon-manager/daemons
+  daemon-path-log         = ~/.daemon-manager/logs
+  daemon-path-daemon-root = /etc/daemon-manager/daemons
+  daemon-path-log-root    = /var/log/daemon-manager
+
+These specify which paths Daemon Manager will search for daemon config files
+('daemon-path-daemon') and write logs to ('daemon-path-logs'). The 2 settings
+ending with '-root' are similar but only apply to the 'root' user (this is
+because systems typically put root settings in '/etc').
+
+All path settings will perform the following substitutions:
+
+  *~/*::
+
+    Paths that start with `~/` will have the `~` replaced user's home
+    directory.
+
+    NOTE: In this case, when daemon manager starts it will create the
+    directories for any active users (anyone listed on the left hand side in the
+    'can_run_as' section described below).
+
+  *%username%*::
+
+    If the string `%username%` appears anywhere in the path it will be replaced by
+    the user's login name.
+
+=== '[can_run_as]'
 
 The 'can_run_as' section identifies which users are allowed to launch daemons. It
 looks like this:
@@ -65,6 +104,8 @@ section:
 A trailing `:' is also acceptable:
 
   bob:
+
+=== '[manages]'
 
 The 'manages' section allows the system administrator to appoint users that
 can start and stop daemons on behalf of other users. It has the same syntax as

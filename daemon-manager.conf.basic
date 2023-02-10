@@ -1,5 +1,12 @@
 # See daemon-manager.conf(5) for details on the format of this file.
 
+[settings]
+# daemon-path-daemon      = %userhome%/.daemon-manager/daemons
+# daemon-path-log         = %userhome%/.daemon-manager/logs
+# daemon-path-daemon-root = /etc/daemon-manager/daemons
+# daemon-path-log-root    = /var/log/daemon-manager
+
+
 [can_run_as]
 # List all the users you want to be able to launch daemons in a list here
 # followed by an optional comma separated list of users they are allowed to

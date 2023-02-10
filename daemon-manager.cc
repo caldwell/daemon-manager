@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2018 David Caldwell <david@porkrind.org>
+//  Copyright (c) 2010-2023 David Caldwell <david@porkrind.org>
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 ////
 
@@ -87,6 +87,8 @@ int main(int argc, char **argv)
     try {
         permissions::check(config_path, 0113, 0, 0);
         config = parse_master_config(config_path);
+        validate_keys_pedantically(config.settings, config_path,
+                                   { "daemon-path-daemon", "daemon-path-log", "daemon-path-daemon-root", "daemon-path-log-root" });
     } catch(std::exception &e) {
         log(LOG_ERR, "Couldn't load config file: %s\n", e.what());
         exit(EXIT_FAILURE);
@@ -189,6 +191,12 @@ static vector<user*> user_list_from_config(struct master_config config)
 
     unique_users = uniq(unique_users);
 
+    auto &cfg = config.settings;
+    string user_daemon_pattern = cfg.count("daemon-path-daemon")      ? cfg["daemon-path-daemon"]       : "~/.daemon-manager/daemons";
+    string root_daemon_dir     = cfg.count("daemon-path-daemon-root") ? cfg["daemon-path-daemon-root"]  : "/etc/daemon-manager/daemons";
+    string user_log_pattern    = cfg.count("daemon-path-log")         ? cfg["daemon-path-log"]          : "~/.daemon-manager/logs";
+    string root_log_dir        = cfg.count("daemon-path-log-root")    ? cfg["daemon-path-log-root"]     : "/var/log/daemon-manager";
+
     dump_config(config);
 
     map<string,user*> users;
@@ -197,7 +205,8 @@ static vector<user*> user_list_from_config(struct master_config config)
     foreach(string name, unique_users) {
         class user *u=NULL;
         try {
-            u = new user(name);
+            u = new user(name, name == "root" ? root_daemon_dir : user_daemon_pattern,
+                               name == "root" ? root_log_dir    : user_log_pattern);
             u->create_dirs();
             user_list.push_back(users[name] = u);
         } catch (std::exception &e) {
@@ -608,11 +617,11 @@ static string daemon_id_list(vector<class daemon*> daemons)
 static string elapsed(time_t seconds)
 {
     std::list<string> s;
-                 s.push_front(strprintf("%lds", seconds % 60)); seconds /= 60;
-    if (seconds) s.push_front(strprintf("%ldm", seconds % 60)); seconds /= 60;
-    if (seconds) s.push_front(strprintf("%ldh", seconds % 24)); seconds /= 24;
-    if (seconds) s.push_front(strprintf("%ldd", seconds %  7)); seconds /=  7;
-    if (seconds) s.push_front(strprintf("%ldw", seconds     ));
+                 {s.push_front(strprintf("%lds", seconds % 60));} seconds /= 60;
+    if (seconds) {s.push_front(strprintf("%ldm", seconds % 60));} seconds /= 60;
+    if (seconds) {s.push_front(strprintf("%ldh", seconds % 24));} seconds /= 24;
+    if (seconds) {s.push_front(strprintf("%ldd", seconds %  7));} seconds /=  7;
+    if (seconds) {s.push_front(strprintf("%ldw", seconds     ));}
 
     s.resize(2);
     return join(s, "");
@@ -627,7 +636,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     string arg = space != command_line.npos ? command_line.substr(space+1, command_line.length()) : "";
     log(LOG_DEBUG, "line: \"%s\" cmd: \"%s\", arg: \"%s\"\n", command_line.c_str(), cmd.c_str(), arg.c_str());
 
-    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile", "pid" };
+    const string valid_commands[] = { "list", "status", "rescan", "start", "stop", "restart", "logfile", "configfile", "pid", "export" };
 
     if (find(valid_commands, valid_commands + lengthof(valid_commands), cmd) == valid_commands + lengthof(valid_commands) && cmd.compare(0,5,"kill-") != 0)
         throw_str("bad command \"%s\"", cmd.c_str());
@@ -637,10 +646,10 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     }
 
     if (cmd == "status") {
-        string resp = strprintf("%-30s %-15s %6s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
+        string resp = strprintf("%-30s %-15s %9s %8s %8s %8s %8s\n", "daemon-id", "state", "pid", "respawns", "cooldown", "uptime", "total");
         foreach(class daemon *d, manageable)
           if (arg.empty() || arg == d->id)
-            resp += strprintf("%-30s %-15s %6d %8zd %8s %8s %8s\n",
+            resp += strprintf("%-30s %-15s %9d %8zd %8s %8s %8s\n",
                               d->id.c_str(),
                               d->state_str().c_str(),
                               d->current.pid,
@@ -664,6 +673,18 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
         return "OK: New daemons scanned: " + daemon_id_list(new_daemons) + "\n" + fine_whines;
     }
 
+    if (cmd == "export") {
+        if (user->uid != 0) throw_str("Only root can export.");
+        char *buf;
+        size_t size;
+        FILE *f = open_memstream(&buf, &size);
+        export_daemons(*daemons, f);
+        fclose(f);
+        string resp = string("OK: ").append(buf, size);
+        free(buf);
+        return resp;
+    }
+
     vector<class daemon*>::iterator d = find_if(manageable.begin(), manageable.end(), daemon_id_match(arg));
     if (d == manageable.end()) throw_str("unknown id \"%s\"", arg.c_str());
     class daemon *daemon = *d;
@@ -673,6 +694,7 @@ static string do_command(string command_line, user *user, vector<class daemon*> 
     else if (cmd == "stop")    daemon->stop();
     else if (cmd == "restart") { daemon->stop(); daemon->start(); }
     else if (cmd == "logfile") return "OK: " + daemon->log_file();
+    else if (cmd == "configfile") return "OK: " + daemon->config_file;
     else if (cmd == "pid")     if (!daemon->current.pid) throw_str("\"%s\" isn't running", daemon->id.c_str());
                                else return strprintf("OK: %d\n", daemon->current.pid);
     else if (cmd.compare(0,5,"kill-") == 0) {

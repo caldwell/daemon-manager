@@ -1,3 +1,17 @@
+daemon-manager (1.2)
+
+  * Added `edit` command to dmctl to edit a daemon's config file.
+
+  * Added some configuration settings for daemon paths.
+
+ -- David Caldwell <david@porkrind.org>  Fri, 10 Feb 2023 03:12:34 -0800
+
+daemon-manager (1.1.1)
+
+  * Fix Makefile so installing into a empty DESTDIR works (thanks James Cook)
+
+ -- David Caldwell <david@porkrind.org>  Tue, 02 Jun 2020 11:52:42 -0700
+
 daemon-manager (1.1)
 
   * Added `kill` command to dmctl to send signals to daemons.

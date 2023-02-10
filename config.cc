@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org>
+//  Copyright (c) 2010-2023 David Caldwell <david@porkrind.org>
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 
 #include "config.h"
@@ -6,6 +6,7 @@
 #include "uniq.h"
 #include "stringutil.h"
 #include "log.h"
+#include "foreach.h"
 #include <grp.h>
 #include <iostream>
 #include <fstream>
@@ -29,6 +30,7 @@ struct master_config parse_master_config(string path)
 
     struct master_config config;
     map<string,vector<string> > *section = NULL;
+    bool settings_section = false;
 
     int n=0;
     string line;
@@ -50,13 +52,23 @@ struct master_config parse_master_config(string path)
                 log(LOG_WARNING, "%s:%d [runs_as] is now called [can_run_as]. Please fix this, it will break eventually.\n", path.c_str(), n);
             }
 
+            settings_section = false;
             if      (sect == "can_run_as") section = &config.can_run_as;
             else if (sect == "manages")    section = &config.manages;
+            else if (sect == "settings")   settings_section = true;
             else throw_str("%s:%d Illegal section \"%s\"", path.c_str(), n, sect.c_str());
             continue;
         }
 
-        if (!section) throw_str("%s:%d Line before section header", path.c_str(), n);
+        if (!section && !settings_section) throw_str("%s:%d Line before section header", path.c_str(), n);
+
+        if (settings_section) {
+            size_t sep;
+            string key = trim(line.substr(0, sep=line.find('=')));
+            if (sep == line.npos) throw_str("%s:%d Missing '=' after key", path.c_str(), n);
+            config.settings[key] = trim(line.substr(sep+1));
+            continue;
+        }
 
         size_t sep;
         string key = trim(line.substr(0, sep=line.find(':')));
@@ -122,4 +134,31 @@ struct daemon_config parse_daemon_config(string path)
         (*section)[key] = trim(line.substr(sep+1));
     }
     return config;
+}
+
+static list<string> validate_keys_inner(map<string,string> cfg, const string &file, const vector<string> &valid_keys, bool error)
+{
+    std::list<string> whine_list;
+    typedef pair<string,string> str_pair;
+    foreach(str_pair c, cfg) {
+        foreach(const string &key, valid_keys)
+            if (c.first == key) goto found;
+        { string warning = strprintf("Unknown key \"%s\" in config file \"%s\"\n", c.first.c_str(), file.c_str());
+            log(error ? LOG_ERR : LOG_WARNING, "%s", warning.c_str());
+          whine_list.push_back("Warning: "+warning);
+        } // C++ doesn't like "warning" being instantiated midsteram unless it goes out of scope before the goto label.
+      found:;
+    }
+    return whine_list;
+}
+
+void validate_keys_pedantically(map<string,string> cfg, const string &file, const vector<string> &valid_keys)
+{
+    if (validate_keys_inner(cfg, file, valid_keys, true).size() > 0)
+        throw_str("%s contains unknown keys", file.c_str());
+}
+
+list<string> validate_keys(map<string,string> cfg, const string &file, const vector<string> &valid_keys)
+{
+    return validate_keys_inner(cfg, file, valid_keys, false);
 }

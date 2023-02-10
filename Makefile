@@ -1,4 +1,4 @@
-VERSION=1.1
+VERSION=1.2
 
 SBIN=daemon-manager
 BIN=dmctl
@@ -6,9 +6,11 @@ all: $(SBIN) $(BIN)
 
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o json-escape.o command-sock.o peercred.o
 
+COMMAND_SOCKET_PATH ?= "/var/run/daemon-manager.sock"
+
 dmctl daemon-manager: CC=g++
 dmctl daemon-manager: CXXFLAGS += -std=c++11 -MMD -g -Wall -Wextra -Wno-parentheses
-dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\"
+dmctl daemon-manager: CPPFLAGS += -DVERSION=\"$(VERSION)\" -DCOMMAND_SOCKET_PATH=\"$(COMMAND_SOCKET_PATH)\"
 dmctl daemon-manager: LDFLAGS  += -g
 
 dmctl: dmctl.o user.o strprintf.o permissions.o passwd.o options.o posix-util.o command-sock.o
@@ -24,7 +26,7 @@ MAN5=daemon.conf.5 daemon-manager.conf.5
 man: $(MAN1) $(MAN5)
 all: man
 
-ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation"
+ASCIIDOC_FLAGS=--attribute=revnumber="daemon-manager-$(VERSION)" --attribute=manmanual="Daemon Manager Documentation" --no-xmllint
 
 %.1 : %.cc
 	a2x $(ASCIIDOC_FLAGS) -f manpage $<
@@ -45,11 +47,10 @@ BIN_DIR  = $(PREFIX)/bin
 MAN_DIR  = $(PREFIX)/share/man
 
 install: all
-	cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
-	cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
-	cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
-	cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
-
+	mkdir -p $(DESTDIR)$(SBIN_DIR);     cp -a $(SBIN) $(DESTDIR)$(SBIN_DIR)
+	mkdir -p $(DESTDIR)$(BIN_DIR);      cp -a $(BIN)  $(DESTDIR)$(BIN_DIR)
+	mkdir -p $(DESTDIR)$(MAN_DIR)/man1; cp -a $(MAN1) $(DESTDIR)$(MAN_DIR)/man1
+	mkdir -p $(DESTDIR)$(MAN_DIR)/man5; cp -a $(MAN5) $(DESTDIR)$(MAN_DIR)/man5
 	mkdir -p $(DESTDIR)$(ETC_DIR)/daemon-manager/daemons
 	install -m 600 -o 0 -g 0 daemon-manager.conf.basic $(DESTDIR)$(ETC_DIR)/daemon-manager/daemon-manager.conf
 
@@ -68,3 +69,8 @@ daemon-manager-$(VERSION):
 	cd $@ && git checkout $(VERSION)
 	rm -rf $@/.git
 	make -C $@ man
+
+update-copyrights:
+	year=$$(date +%Y);   \
+	last=$$(($$year-1)); \
+	sed -i -E "s/(Copyright .* 20..)(|-20..) David/\1-$$year David/" $$(git diff --name-only master@{$$last-01-01} HEAD)
