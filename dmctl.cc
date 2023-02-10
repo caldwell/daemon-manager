@@ -353,6 +353,12 @@ COMMANDS
   This runs "tail -f" on the log file of the daemon identified by
   <daemon-id>.
 
+*'<daemon-id>' edit*::
+
+  This launches your editor on the config file identified by <daemon-id> (using
+  the `VISUAL` environment variable, or if that isn't set the `EDITOR`
+  environment variable, or, if _that_ isn't set, 'vi').
+
 *'<daemon-id>' kill '-<signal>'*::
 
   This sends signal specified by <signal> to the daemon identified by
