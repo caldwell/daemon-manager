@@ -8,10 +8,14 @@
 
 using namespace std;
 
+bool exists(string path) {
+    struct stat st;
+    return stat(path.c_str(), &st) == 0;
+}
+
 void mkdir_ug(string path, mode_t mode, int uid, int gid)
 {
-    struct stat st;
-    if (stat(path.c_str(), &st) != 0)
+    if (!exists(path))
         mkdir(path.c_str(), mode)    == -1 && throw_strerr("mkdir %s failed", path.c_str());
     chown(path.c_str(), uid, gid)    == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", path.c_str(), uid, gid);
 }

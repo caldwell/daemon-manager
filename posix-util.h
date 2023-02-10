@@ -5,6 +5,7 @@
 
 #include <string>
 
+bool exists(std::string path);
 void mkdir_ug(std::string path, mode_t mode, int uid=-1, int gid=-1);
 
 #endif /* __POSIX_UTIL_H__ */
