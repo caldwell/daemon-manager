@@ -371,6 +371,9 @@ COMMANDS
     dmctl mydaemon kill KILL
     dmctl mydaemon kill SIGKILL
 
+  [NOTE]: This just sends a signal directly to the daemon's pid. If the signal
+  causes the process to exit then 'daemon-manager(1)' will restart the daemon as
+  usual (assuming the `autostart=yes` setting is enabled).
 
 SEE ALSO
 --------
