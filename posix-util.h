@@ -1,4 +1,4 @@
-//  Copyright (c) 2010-2013 David Caldwell <david@porkrind.org> -*- c++ -*-
+//  Copyright (c) 2010-2023 David Caldwell <david@porkrind.org> -*- c++ -*-
 //  Licenced under the GPL 3.0 or any later version. See LICENSE file for details.
 #ifndef __POSIX_UTIL_H__
 #define __POSIX_UTIL_H__

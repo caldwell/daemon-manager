@@ -69,3 +69,8 @@ daemon-manager-$(VERSION):
 	cd $@ && git checkout $(VERSION)
 	rm -rf $@/.git
 	make -C $@ man
+
+update-copyrights:
+	year=$$(date +%Y);   \
+	last=$$(($$year-1)); \
+	sed -i -E "s/(Copyright .* 20..)(|-20..) David/\1-$$year David/" $$(git diff --name-only master@{$$last-01-01} HEAD)
