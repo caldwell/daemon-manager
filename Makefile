@@ -1,4 +1,4 @@
-VERSION=1.2
+VERSION:=$(shell sed -E '1 s/^[-_a-zA-Z0-9]+ \((.*)\)/\1/;q' Changes)
 
 SBIN=daemon-manager
 BIN=dmctl
