@@ -136,7 +136,6 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
     try {
         close(fd[0]);
         if (config.log_output) {
-            mkdir_ug(user->log_dir().c_str(), 0770, user->uid, user->gid);
             close(1);
             close(2);
             string logfile = log_file();

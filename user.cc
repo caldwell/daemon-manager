@@ -13,39 +13,50 @@ using namespace std;
 
 map<string,user*> users;
 
-user::user(string name)
+user::user(string name, string daemondir, string logdir)
 {
     struct passwd *p = getpwnam(name.c_str());
     if (!p) throw_str("No user named \"%s\"", name.c_str());
-    init(p);
+    init(p, daemondir, logdir);
 }
 
-void user::init(struct passwd *p)
+void user::init(struct passwd *p, string daemondir, string logdir)
 {
     name = string(p->pw_name);
     uid = p->pw_uid;
     gid = p->pw_gid;
     homedir = string(p->pw_dir);
+    this->daemondir = replace_dir_patterns(daemondir);
+    this->logdir = replace_dir_patterns(logdir);
+}
+
+string user::replace_dir_patterns(string pattern)
+{
+    if (pattern.substr(0,2) == "~/")
+        pattern.replace(0, 1, homedir);
+    size_t start;
+    if ((start = pattern.find("%username%")) != string::npos)
+        pattern.replace(start, 10, name);
+    return pattern;
 }
 
 void user::create_dirs()
 {
-    if (uid != 0) { // Don't create /etc/daemon-manager. Package manager should do that.
-        mkdir_ug(homedir + "/.daemon-manager", 0750, uid, gid);
-        mkdir_ug(config_path().c_str(), 0750, uid, gid);
-    }
+    // Only create hierarchy in home directories, since that's the only one that's guessable.
+    if (daemondir.substr(0,2) == "~/")
+        mkdir_pug(homedir, daemondir.substr(2,daemondir.length()), 0750, uid, gid);
+    if (logdir.substr(0,2) == "~/")
+        mkdir_pug(homedir, logdir.substr(2,logdir.length()), 0750, uid, gid);
 }
 
 string user::config_path()
 {
-    return uid == 0 ? "/etc/daemon-manager/daemons"
-                    : homedir + "/.daemon-manager/daemons";
+    return daemondir;
 }
 
 string user::log_dir()
 {
-    return uid == 0 ? "/var/log/daemon-manager/"
-                    : homedir + "/.daemon-manager/log/";
+    return logdir;
 }
 
 vector<string> user::config_files()

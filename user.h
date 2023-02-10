@@ -16,16 +16,19 @@ class user {
     uid_t uid;
     gid_t gid;
     string homedir;
+    string logdir;
+    string daemondir;
     map<uid_t,bool> can_run_as_uid;
     vector<user*> manages;
 
-    user(string name);
+    user(string name, string daemondir, string logdir);
     void create_dirs();
     string config_path();
     string log_dir();
     vector<string> config_files();
   private:
-    void init(struct passwd *);
+    void init(struct passwd *, string daemondir, string logdir);
+    string replace_dir_patterns(string pattern);
 };
 
 #endif /* __USER_H__ */

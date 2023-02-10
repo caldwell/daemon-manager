@@ -87,6 +87,8 @@ int main(int argc, char **argv)
     try {
         permissions::check(config_path, 0113, 0, 0);
         config = parse_master_config(config_path);
+        validate_keys_pedantically(config.settings, config_path,
+                                   { "daemon-path-daemon", "daemon-path-log", "daemon-path-daemon-root", "daemon-path-log-root" });
     } catch(std::exception &e) {
         log(LOG_ERR, "Couldn't load config file: %s\n", e.what());
         exit(EXIT_FAILURE);
@@ -189,6 +191,12 @@ static vector<user*> user_list_from_config(struct master_config config)
 
     unique_users = uniq(unique_users);
 
+    auto &cfg = config.settings;
+    string user_daemon_pattern = cfg.count("daemon-path-daemon")      ? cfg["daemon-path-daemon"]       : "~/.daemon-manager/daemons";
+    string root_daemon_dir     = cfg.count("daemon-path-daemon-root") ? cfg["daemon-path-daemon-root"]  : "/etc/daemon-manager/daemons";
+    string user_log_pattern    = cfg.count("daemon-path-log")         ? cfg["daemon-path-log"]          : "~/.daemon-manager/logs";
+    string root_log_dir        = cfg.count("daemon-path-log-root")    ? cfg["daemon-path-log-root"]     : "/var/log/daemon-manager";
+
     dump_config(config);
 
     map<string,user*> users;
@@ -197,7 +205,8 @@ static vector<user*> user_list_from_config(struct master_config config)
     foreach(string name, unique_users) {
         class user *u=NULL;
         try {
-            u = new user(name);
+            u = new user(name, name == "root" ? root_daemon_dir : user_daemon_pattern,
+                               name == "root" ? root_log_dir    : user_log_pattern);
             u->create_dirs();
             user_list.push_back(users[name] = u);
         } catch (std::exception &e) {
