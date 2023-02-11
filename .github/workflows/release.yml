@@ -35,7 +35,7 @@ jobs:
     - uses: actions/checkout@v3
     - run: |
         echo $GITHUB_OUTPUT
-        echo ${{ getinfo.outputs.version }}
+        echo ${{ jobs.getinfo.outputs.version }}
     - name: Install Dependencies
       run: sudo apt install asciidoc-base
     - name: Release tarball
