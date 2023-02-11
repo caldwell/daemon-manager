@@ -2,7 +2,8 @@ VERSION=1.2
 
 SBIN=daemon-manager
 BIN=dmctl
-all: $(SBIN) $(BIN)
+all: bin
+bin: $(SBIN) $(BIN)
 
 daemon-manager: daemon-manager.o user.o strprintf.o permissions.o config.o passwd.o daemon.o log.o options.o posix-util.o json-escape.o command-sock.o peercred.o
 
