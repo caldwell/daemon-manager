@@ -67,5 +67,5 @@ jobs:
         files: |
           daemon-manager-*.tar.gz
           daemon-manager_*.deb
-          daemon-manager_*.deb
+          daemon-manager-dbgsym_*.ddeb
         body: "# ${{ steps.info.outputs.changelog }}"
