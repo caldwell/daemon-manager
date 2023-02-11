@@ -22,12 +22,12 @@ jobs:
         echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
     - run: |
         echo ${{ steps.info.outputs.version }}
-    - name: Install Dependencies
-      run: sudo apt install asciidoc-base
-    - name: Release tarball
-      run: |
-        VERSION=$(make ci-version)
-        make release
+    # - name: Install Dependencies
+    #   run: sudo apt install asciidoc-base
+    # - name: Release tarball
+    #   run: |
+    #     VERSION=$(make ci-version)
+    #     make release
     - name: Debian package
       run: |
         set -e
@@ -36,7 +36,8 @@ jobs:
         git clone . debian
         cd debian
         #git fetch ${{ github.repositoryUrl }}
-        git checkout debian
+        git branch --all
+        git checkout origin/debian
         git merge -m "Merging ${{ steps.info.outputs.version }} into debian" ${{ github.ref_name }}
         (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
          cat debian/changelog) > debian/changelog.new
