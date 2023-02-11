@@ -6,35 +6,21 @@ on:
     tags: test-[0-9]+.*
 
 jobs:
-  info:
-    outputs:
-      version: ${{ steps.get-version.outputs.version }}
-      changes: ${{ steps.get-changelog.outputs.changelog }}
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Get Version
-      id: get-version
-      run: |
-        echo $GITHUB_OUTPUT
-        echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
-    - name: Get Changelog
-      id: get-changelog
-      run: |
-        echo $GITHUB_OUTPUT
-        echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
-    - run: |
-        echo $GITHUB_OUTPUT
-        echo ${{ steps.get-version.outputs.version }}
-
   build:
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+      changes: ${{ steps.info.outputs.changelog }}
     runs-on: ubuntu-latest
     needs: info
     steps:
     - uses: actions/checkout@v3
+    - name: Get Version
+      id: info
+      run: |
+        echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
+        echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
     - run: |
-        echo $GITHUB_OUTPUT
-        echo ${{ needs.info.outputs.version }}
+        echo ${{ steps.info.outputs.version }}
     - name: Install Dependencies
       run: sudo apt install asciidoc-base
     - name: Release tarball
@@ -44,29 +30,31 @@ jobs:
     - name: Debian package
       run: |
         set -e
-        VERSION=$(make ci-version)
-        echo Building package for ${VERSION:?version broken}
+        set -x
+        echo Building package for ${{ steps.info.outputs.version }}
         git clone . debian
         cd debian
-        git merge -m "Merging $VERSION into debian" $VERSION
+        git fetch ${{ github.repositoryUrl }}
+        git checkout debian
+        git merge -m "Merging ${{ steps.info.outputs.version }} into debian" ${{ github.ref_name }}
         (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
          cat debian/changelog) > debian/changelog.new
         mv debian/changelog{.new,}
         git add debian/changelog
-        git commit -m "debian/changelog: Version $VERSION"
+        git commit -m "debian/changelog: Version ${{ steps.info.outputs.version }}"
         dpkg-buildpackage -rfakeroot
 
     - name: Tarball artifact
       uses: actions/upload-artifact@v3.1.2
       with:
-        name: daemon-manager-${{ needs.info.outputs.version }}.tar.gz
+        name: daemon-manager-${{ steps.info.outputs.version }}.tar.gz
         path: daemon-manager-*.tar.gz
         if-no-files-found: error
         retention-days: 1 ### for my tests, remove me when it works!!
     - name: Deban package artifact
       uses: actions/upload-artifact@v3.1.2
       with:
-        name: daemon-manager_${{ needs.info.outputs.version }}_amd64.deb
+        name: daemon-manager_${{ steps.info.outputs.version }}_amd64.deb
         path: daemon-manager-*.deb
         if-no-files-found: error
         retention-days: 1 ### for my tests, remove me when it works!!
@@ -77,4 +65,4 @@ jobs:
         files: |
           daemon-manager-*.tar.gz
           daemon-manager-*.deb
-        body: "# ${{ needs.info.outputs.changelog }}"
+        body: "# ${{ steps.info.outputs.changelog }}"
