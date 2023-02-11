@@ -26,12 +26,12 @@ jobs:
         cat $GITHUB_OUTPUT
     - run: echo '${{ steps.info.outputs.version }}'
 #    - run: echo ${{ steps.info.outputs.changelog }}
-    - run: echo "${INPUT_CHANGELOG}"
-      with:
-        changelog: ${{ fromJSON(steps.info.outputs.changelog) }}
-    - run: test -n "$INPUT_CHANGELOG"
-      with:
-        changelog: ${{ fromJSON(steps.info.outputs.changelog) }}
+    - run: echo "${CHANGELOG}"
+      env:
+        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
+    - run: test -n "$CHANGELOG"
+      env:
+        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
     - name: Install Dependencies
       run: sudo apt install asciidoc-base debhelper
     - name: Release tarball
@@ -39,22 +39,22 @@ jobs:
         make release
     - name: Debian package
       run: |
-        echo "Building package for $INPUT_VERSION"
+        echo "Building package for $VERSION"
         git branch --track debian origin/debian
         git clone -b debian . debian
         cd debian
         git config user.name "CI Build Bot"
         git config user.email "david@porkrind.org"
-        git merge -m "Merging $INPUT_VERSION into debian" ${{ github.ref_name }}
-        (echo "$INPUT_CHANGELOG" | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
+        git merge -m "Merging $VERSION into debian" ${{ github.ref_name }}
+        (echo "$CHANGELOG" | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
          cat debian/changelog) > debian/changelog.new
         mv debian/changelog{.new,}
         git add debian/changelog
-        git commit -m "debian/changelog: Version $INPUT_VERSION"
+        git commit -m "debian/changelog: Version $VERSION"
         dpkg-buildpackage -rfakeroot
-      with:
-        changelog: ${{ fromJSON(steps.info.outputs.changelog) }}
-        version: ${{ steps.info.outputs.version }}
+      env:
+        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
+        VERSION: ${{ steps.info.outputs.version }}
 
     - name: Tarball artifact
       uses: actions/upload-artifact@v3.1.2
