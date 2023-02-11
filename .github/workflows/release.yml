@@ -22,14 +22,12 @@ jobs:
         echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
     - run: |
         echo ${{ steps.info.outputs.version }}
-    - name: deps
-      run : sudo apt install debhelper
-    # - name: Install Dependencies
-    #   run: sudo apt install asciidoc-base
-    # - name: Release tarball
-    #   run: |
-    #     VERSION=$(make ci-version)
-    #     make release
+    - name: Install Dependencies
+      run: sudo apt install asciidoc-base debhelper
+    - name: Release tarball
+      run: |
+        VERSION=$(make ci-version)
+        make release
     - name: Debian package
       run: |
         set -e
