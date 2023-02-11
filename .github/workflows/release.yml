@@ -32,6 +32,8 @@ jobs:
       run: |
         set -e
         set -x
+        export GIT_AUTHOR_NAME="CI Build Bot"
+        export GIT_AUTHOR_EMAIL="david@porkrind.org"
         echo Building package for ${{ steps.info.outputs.version }}
         git branch --track debian origin/debian
         git clone -b debian . debian
