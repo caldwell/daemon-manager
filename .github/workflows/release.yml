@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    #branches: [ "release" ]
-    tags: test-[0-9]+.*
+    tags: "[0-9]+.*"
 
 jobs:
   build:
