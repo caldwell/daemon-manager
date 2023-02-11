@@ -15,8 +15,8 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
     steps:
     - uses: actions/checkout@v3
-    - name: make
-      run: make
+    - name: make bin
+      run: make bin
   docs:
     runs-on: ubuntu-latest
     steps:
