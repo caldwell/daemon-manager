@@ -57,7 +57,7 @@ jobs:
       uses: actions/upload-artifact@v3.1.2
       with:
         name: daemon-manager_${{ steps.info.outputs.version }}_amd64.deb
-        path: daemon-manager-*.deb
+        path: daemon-manager_*.deb
         if-no-files-found: error
         retention-days: 1 ### for my tests, remove me when it works!!
 
@@ -66,5 +66,6 @@ jobs:
       with:
         files: |
           daemon-manager-*.tar.gz
-          daemon-manager-*.deb
+          daemon-manager_*.deb
+          daemon-manager_*.deb
         body: "# ${{ steps.info.outputs.changelog }}"
