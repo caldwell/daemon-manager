@@ -32,12 +32,12 @@ jobs:
       run: |
         set -e
         set -x
-        export GIT_AUTHOR_NAME="CI Build Bot"
-        export GIT_AUTHOR_EMAIL="david@porkrind.org"
         echo Building package for ${{ steps.info.outputs.version }}
         git branch --track debian origin/debian
         git clone -b debian . debian
         cd debian
+        git config user.name "CI Build Bot"
+        git config user.email "david@porkrind.org"
         git merge -m "Merging ${{ steps.info.outputs.version }} into debian" ${{ github.ref_name }}
         (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
          cat debian/changelog) > debian/changelog.new
