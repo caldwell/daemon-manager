@@ -13,17 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - run: echo $GITHUB_OUTPUT
+    - run: echo ${{ steps.get-changelog.outputs.changelog }}
+    - run: |
+        echo $GITHUB_OUTPUT
+        echo ${{ steps.get-version.outputs.version }}
     - name: Get Version
       id: get-version
-      run: echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
+      run: |
+        echo $GITHUB_OUTPUT
+        echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
     - name: Get Changelog
       id: get-changelog
-      run: echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
+      run: |
+        echo $GITHUB_OUTPUT
+        echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
     - name: Install Dependencies
       run: sudo apt install asciidoc-base
     - name: Release tarball
-      run: make release
+      run: |
+        VERSION=$(make ci-version)
+        git archive --prefix=daemon-manager-"$VERSION"/ HEAD -o daemon-manager-"$VERSION".tar.gz
     - name: Debian package
       run: |
         set -e
