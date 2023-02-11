@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Get Version
+      fetch-depth: 0
+    - name: Get Version and Changelog
       id: info
       run: |
         echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
@@ -25,7 +26,7 @@ jobs:
     - name: Release tarball
       run: |
         VERSION=$(make ci-version)
-        git archive --prefix=daemon-manager-"$VERSION"/ HEAD -o daemon-manager-"$VERSION".tar.gz
+        make release
     - name: Debian package
       run: |
         set -e
@@ -33,7 +34,7 @@ jobs:
         echo Building package for ${{ steps.info.outputs.version }}
         git clone . debian
         cd debian
-        git fetch ${{ github.repositoryUrl }}
+        #git fetch ${{ github.repositoryUrl }}
         git checkout debian
         git merge -m "Merging ${{ steps.info.outputs.version }} into debian" ${{ github.ref_name }}
         (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
