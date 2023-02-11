@@ -2,8 +2,16 @@ name: C/C++ CI
 
 on:
   push:
-    branches: [ "release" ]
+    #branches: [ "release" ]
+    tags: 1.* # Can't use regexes here and I hate `v` prefixes
 
+outputs:
+  version:
+    description: "Daemon Manager Release Version"
+    value: ${{ steps.get-version.outputs.version }}
+  changes:
+    description: "Changelog for this version"
+    value: ${{ steps.get-changelog.outputs.changelog }}
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,6 +19,40 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install Dependencies
       run: sudo apt install asciidoc-base
-    - name: make
+    - name: Get Version
+      id: get-version
+      run: echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
+    - name: Get Changelog
+      id: get-changelog
+      run: echo "changelog=$(make ci-changelog)" >> $GITHUB_OUTPUT
+    - name: Release tarball
       run: make release
-      
+    - name: Debian package
+      run: |
+        set -e
+        VERSION=$(make ci-version)
+        echo Building package for ${VERSION:?version broken}
+        git clone . debian
+        cd debian
+        git merge -m "Merging $VERSION into debian" $VERSION
+        (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
+         cat debian/changelog) > debian/changelog.new
+        mv debian/changelog{.new,}
+        git add debian/changelog
+        git commit -m "debian/changelog: Version $VERSION"
+        dpkg-buildpackage -rfakeroot
+
+    - name: Tarball artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: daemon-manager-${{ steps.get-version.outputs.version }}.tar.gz
+        path: daemon-manager-*.tar.gz
+        if-no-files-found: error
+        retention-days: 1 ### for my tests, remove me when it works!!
+    - name: Deban package artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: daemon-manager_${{ steps.get-version.outputs.version }}_amd64.deb
+        path: daemon-manager-*.deb
+        if-no-files-found: error
+        retention-days: 1 ### for my tests, remove me when it works!!
