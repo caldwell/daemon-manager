@@ -19,7 +19,7 @@ jobs:
       id: info
       run: |
         echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
-        echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
+        echo "changelog=$(make ci-changelog | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
     - run: echo ${{ steps.info.outputs.version }}
     - run: echo ${{ steps.info.outputs.changelog }}
