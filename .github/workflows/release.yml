@@ -10,9 +10,6 @@ jobs:
     defaults:
       run:
         shell: bash -xeo pipefail {0}
-    outputs:
-      version: ${{ steps.info.outputs.version }}
-      changes: ${{ steps.info.outputs.changelog }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -23,15 +20,14 @@ jobs:
       run: |
         echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
         echo "changelog=$(make ci-changelog | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
+        echo "changelog_meat=$(make ci-changelog-meat) | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
-    - run: echo '${{ steps.info.outputs.version }}'
-#    - run: echo ${{ steps.info.outputs.changelog }}
-    - run: echo "${CHANGELOG}"
+    - name: Ensure env vars
+      run: test -n "$VERSION" -a -n "$CHANGELOG" -a -n "$CHANGELOG_MEAT"
       env:
-        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
-    - run: test -n "$CHANGELOG"
-      env:
-        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
+        VERSION:        ${{ steps.info.outputs.version }}
+        CHANGELOG:      ${{ fromJSON(steps.info.outputs.changelog) }}
+        CHANGELOG_MEAT: ${{ fromJSON(steps.info.outputs.changelog_meat) }}
     - name: Install Dependencies
       run: sudo apt install asciidoc-base debhelper
     - name: Release tarball
@@ -56,21 +52,6 @@ jobs:
         CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
         VERSION: ${{ steps.info.outputs.version }}
 
-    - name: Tarball artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: daemon-manager-${{ steps.info.outputs.version }}.tar.gz
-        path: daemon-manager-*.tar.gz
-        if-no-files-found: error
-        retention-days: 1 ### for my tests, remove me when it works!!
-    - name: Deban package artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: daemon-manager_${{ steps.info.outputs.version }}_amd64.deb
-        path: daemon-manager_*.deb
-        if-no-files-found: error
-        retention-days: 1 ### for my tests, remove me when it works!!
-
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
@@ -78,4 +59,4 @@ jobs:
           daemon-manager-*.tar.gz
           daemon-manager_*.deb
           daemon-manager-dbgsym_*.ddeb
-        body: "# ${{ fromJSON(steps.info.outputs.changelog) }}"
+        body: ${{ fromJSON(steps.info.outputs.changelog_meat) }}
