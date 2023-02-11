@@ -8,7 +8,8 @@ on:
 jobs:
   build:
     defaults:
-      shell: bash -xeo pipefail -c {0}
+      run:
+        shell: bash -xeo pipefail -c {0}
     outputs:
       version: ${{ steps.info.outputs.version }}
       changes: ${{ steps.info.outputs.changelog }}
