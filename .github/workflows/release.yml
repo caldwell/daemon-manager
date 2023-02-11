@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     #branches: [ "release" ]
-    tags: test-[0-9]+.* # Can't use regexes here and I hate `v` prefixes
+    tags: test-[0-9]+.*
 
 jobs:
   build:
@@ -13,15 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Install Dependencies
-      run: sudo apt install asciidoc-base
+    - run: echo $GITHUB_OUTPUT
     - name: Get Version
       id: get-version
       run: echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
-    - run: echo $GITHUB_OUTPUT
     - name: Get Changelog
       id: get-changelog
       run: echo "changelog=$(make ci-changelog)" | jq -nR '[inputs | .] | join("\n")' >> $GITHUB_OUTPUT
+    - name: Install Dependencies
+      run: sudo apt install asciidoc-base
     - name: Release tarball
       run: make release
     - name: Debian package
