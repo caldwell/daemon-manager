@@ -8,10 +8,20 @@ on:
 
 jobs:
   build:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
+    steps:
+    - uses: actions/checkout@v3
+    - name: make
+      run: make
+  docs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Install Dependencies
       run: sudo apt install asciidoc-base
-    - name: make
-      run: make
+    - name: make man pages
+      run: make man
