@@ -34,7 +34,9 @@ jobs:
         set -x
         echo Building package for ${{ steps.info.outputs.version }}
         git branch --all
-        git clone -b debian . debian
+        git clone -b origin/debian . debian ||
+        git clone -b remotes/origin/debian . debian ||
+        git clone -b refs/remotes/origin/debian . debian
         cd debian
         #git fetch ${{ github.repositoryUrl }}
         # git checkout origin/debian
