@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags: "[0-9]+.*"
+
+jobs:
+  build:
+    defaults:
+      run:
+        shell: bash -xeo pipefail {0}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Get Version and Changelog
+      id: info
+      run: |
+        echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
+        echo "changelog=$(make ci-changelog           | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
+        echo "changelog_meat=$(make ci-changelog-meat | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
+        cat $GITHUB_OUTPUT
+    - name: Ensure env vars
+      run: test -n "$VERSION" -a -n "$CHANGELOG" -a -n "$CHANGELOG_MEAT"
+      env:
+        VERSION:        ${{ steps.info.outputs.version }}
+        CHANGELOG:      ${{ fromJSON(steps.info.outputs.changelog) }}
+        CHANGELOG_MEAT: ${{ fromJSON(steps.info.outputs.changelog_meat) }}
+    - name: Install Dependencies
+      run: sudo apt install asciidoc-base debhelper
+    - name: Release tarball
+      run: |
+        make release
+    - name: Debian package
+      run: |
+        echo "Building package for $VERSION"
+        git branch --track debian origin/debian
+        git clone -b debian . debian
+        cd debian
+        git config user.name "CI Build Bot"
+        git config user.email "david@porkrind.org"
+        git merge -m "Merging $VERSION into debian" ${{ github.ref_name }}
+        (echo "$CHANGELOG" | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
+         cat debian/changelog) > debian/changelog.new
+        mv debian/changelog{.new,}
+        git add debian/changelog
+        git commit -m "debian/changelog: Version $VERSION"
+        dpkg-buildpackage -rfakeroot
+      env:
+        CHANGELOG: ${{ fromJSON(steps.info.outputs.changelog) }}
+        VERSION: ${{ steps.info.outputs.version }}
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          daemon-manager-*.tar.gz
+          daemon-manager_*.deb
+          daemon-manager-dbgsym_*.ddeb
+        body: ${{ fromJSON(steps.info.outputs.changelog_meat) }}
