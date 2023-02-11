@@ -3,17 +3,13 @@ name: C/C++ CI
 on:
   push:
     #branches: [ "release" ]
-    tags: 1.* # Can't use regexes here and I hate `v` prefixes
+    tags: test-[0-9]+.* # Can't use regexes here and I hate `v` prefixes
 
-outputs:
-  version:
-    description: "Daemon Manager Release Version"
-    value: ${{ steps.get-version.outputs.version }}
-  changes:
-    description: "Changelog for this version"
-    value: ${{ steps.get-changelog.outputs.changelog }}
 jobs:
   build:
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      changes: ${{ steps.get-changelog.outputs.changelog }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -56,3 +52,11 @@ jobs:
         path: daemon-manager-*.deb
         if-no-files-found: error
         retention-days: 1 ### for my tests, remove me when it works!!
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          daemon-manager-*.tar.gz
+          daemon-manager-*.deb
+        body: "# ${{ steps.get-changelog.outputs.changelog }}"
