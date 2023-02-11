@@ -21,10 +21,10 @@ jobs:
         echo "version=$(make ci-version)" >> $GITHUB_OUTPUT
         echo "changelog=$(make ci-changelog | jq -nR '[inputs | .] | join("\n")')" >> $GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
-    - run: echo ${{ steps.info.outputs.version }}
-    - run: echo ${{ steps.info.outputs.changelog }}
-    - run: echo ${{ fromJSON(steps.info.outputs.changelog) }}
-    - run: test -n ${{ fromJSON(steps.info.outputs.changelog) }}
+    - run: echo '${{ steps.info.outputs.version }}'
+    - run: echo '${{ steps.info.outputs.changelog }}'
+    - run: echo '${{ fromJSON(steps.info.outputs.changelog) }}'
+    - run: test -n '${{ fromJSON(steps.info.outputs.changelog) }}'
     - name: Install Dependencies
       run: sudo apt install asciidoc-base debhelper
     - name: Release tarball
