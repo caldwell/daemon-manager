@@ -33,11 +33,11 @@ jobs:
         set -e
         set -x
         echo Building package for ${{ steps.info.outputs.version }}
-        git clone . debian
+        git branch --all
+        git clone -b debian . debian
         cd debian
         #git fetch ${{ github.repositoryUrl }}
-        git branch --all
-        git checkout origin/debian
+        # git checkout origin/debian
         git merge -m "Merging ${{ steps.info.outputs.version }} into debian" ${{ github.ref_name }}
         (make ci-changelog | perl -pe 's/^[^\s].*$/$& unstable; urgency=medium/'
          cat debian/changelog) > debian/changelog.new
