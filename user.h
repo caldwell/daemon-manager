@@ -3,6 +3,7 @@
 #ifndef __USER_H__
 #define __USER_H__
 
+#include "passwd.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -27,7 +28,7 @@ class user {
     string log_dir();
     vector<string> config_files();
   private:
-    void init(struct passwd *, string daemondir, string logdir);
+    void init(const pwent &pw, string daemondir, string logdir);
     string replace_dir_patterns(string pattern);
 };
 

@@ -5,8 +5,8 @@
 #include "strprintf.h"
 #include "permissions.h"
 #include "posix-util.h"
+#include "passwd.h"
 #include <string>
-#include <pwd.h>
 #include <glob.h>
 
 using namespace std;
@@ -15,17 +15,17 @@ map<string,user*> users;
 
 user::user(string name, string daemondir, string logdir)
 {
-    struct passwd *p = getpwnam(name.c_str());
-    if (!p) throw_str("No user named \"%s\"", name.c_str());
-    init(p, daemondir, logdir);
+    pwent pw = pwent(name);
+    if (!pw.valid) throw_str("No user named \"%s\"", name.c_str());
+    init(pw, daemondir, logdir);
 }
 
-void user::init(struct passwd *p, string daemondir, string logdir)
+void user::init(const pwent &pw, string daemondir, string logdir)
 {
-    name = string(p->pw_name);
-    uid = p->pw_uid;
-    gid = p->pw_gid;
-    homedir = string(p->pw_dir);
+    name = pw.name;
+    uid = pw.uid;
+    gid = pw.gid;
+    homedir = string(pw.dir);
     this->daemondir = replace_dir_patterns(daemondir);
     this->logdir = replace_dir_patterns(logdir);
 }
