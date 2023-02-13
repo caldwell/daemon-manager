@@ -68,7 +68,7 @@ daemon-manager-$(VERSION):
 	rm -rf $@
 	git clone . $@
 	cd $@ && git checkout $(VERSION)
-	rm -rf $@/.git
+	rm -rf $@/.git* $@/.ditz*
 	make -C $@ man
 
 update-copyrights:
