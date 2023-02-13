@@ -52,6 +52,10 @@ This resembles 'bash' but is not. In particular, quotes are not interpreted
 in the config file, so don't put quotes around 'value' unless you want
 literal quote characters in your environment variable.
 
+There are three default environment variables: 'HOME', 'LOGNAME', and
+'PATH'. Variables with the same name in the config file will override the
+defaults.
+
 CONFIGURATION OPTIONS
 ---------------------
 
