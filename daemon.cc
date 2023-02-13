@@ -161,8 +161,8 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
         chdir(config.working_dir.c_str()) == -1 && throw_strerr("Couldn't change to directory %s", config.working_dir.c_str());
 
         map<string,string> ENV = env_in;
-        ENV["HOME"]    = user->homedir;
-        ENV["LOGNAME"] = user->name;
+        ENV["HOME"]    = config.run_as.dir;
+        ENV["LOGNAME"] = config.run_as.name;
         ENV["PATH"]    = "/usr/bin:/bin";
         list<string> envs;                         // Storage for the full env c++ strings.
         const char *env[ENV.size()+1], **e = env;  // c-string pointers into envs[]

@@ -74,7 +74,10 @@ CONFIGURATION OPTIONS
   Use this option to specify which user the daemon should be run as. By default
   users are only allowed to start daemons as themselves. The system
   administrator can allow a user to run as another user by adding to the
-  'can_run_as' section of the 'daemon-manager.conf(5)' file.
+  'can_run_as' section of the 'daemon-manager.conf(5)' file. The 'HOME'
+  environment variable in the daemon's process will default to the specified
+  user's home directory, and 'LOGNAME' will default to the specified user's
+  login name.
 
 *output*::
 
