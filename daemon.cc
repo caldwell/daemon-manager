@@ -100,7 +100,7 @@ void daemon::start(bool respawn)
     load_config(); // Make sure we are up to date.
 
     current.pid = fork_setuid_exec(config.start_command, config.environment);
-    log(LOG_INFO, "Started %s. pid=%d\n", id.c_str(), current.pid);
+    log(LOG_INFO, "Started %s (running as %s). pid=%d\n", id.c_str(), config.run_as.name.c_str(), current.pid);
     current.respawn_time = time(NULL);
     if (respawn)
         current.respawns++;
@@ -144,13 +144,14 @@ int daemon::fork_setuid_exec(string command, map<string,string> env_in)
             chown(logfile.c_str(), user->uid, user->gid)               == -1 && throw_strerr("Couldn't change %s to uid %d gid %d", logfile.c_str(), user->uid, user->gid);
             time_t t = time(NULL);
             const char *dashes="----------------------------------------------------------------------------------------------------";
-            int dash_length = (int)id.size() + 24+9+2+2+4;
+            string as = user->uid == config.run_as.uid ? "" : strprintf(" (as %s)", config.run_as.name.c_str());
+            int dash_length = (int)id.size() + (int)as.size() + 24+9+2+2+4;
             fprintf(stderr,
                     "\n+%.*s+\n"
-                    "| %.24s Starting \"%s\"... |\n"
+                    "| %.24s Starting \"%s\"%s... |\n"
                     "+%.*s+\n"
                     "> %s\n", dash_length, dashes,
-                    ctime(&t), id.c_str(),
+                    ctime(&t), id.c_str(), as.c_str(),
                     dash_length, dashes,
                     command.c_str());
         }
