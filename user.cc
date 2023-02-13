@@ -26,6 +26,8 @@ void user::init(const pwent &pw, string daemondir, string logdir)
     uid = pw.uid;
     gid = pw.gid;
     homedir = string(pw.dir);
+    if (daemondir.size() && daemondir.back() == '/') daemondir.pop_back();
+    if (logdir.size()    && logdir.back()    == '/') logdir.pop_back();
     this->daemondir = daemondir;
     this->logdir = logdir;
 }

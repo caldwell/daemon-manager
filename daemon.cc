@@ -79,7 +79,7 @@ bool daemon::exists()
 
 string daemon::log_file()
 {
-    return user->log_dir() + name + ".log";
+    return user->log_dir() + "/" + name + ".log";
 }
 
 #include <pwd.h>
