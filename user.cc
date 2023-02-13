@@ -26,8 +26,8 @@ void user::init(const pwent &pw, string daemondir, string logdir)
     uid = pw.uid;
     gid = pw.gid;
     homedir = string(pw.dir);
-    this->daemondir = replace_dir_patterns(daemondir);
-    this->logdir = replace_dir_patterns(logdir);
+    this->daemondir = daemondir;
+    this->logdir = logdir;
 }
 
 string user::replace_dir_patterns(string pattern)
@@ -51,12 +51,12 @@ void user::create_dirs()
 
 string user::config_path()
 {
-    return daemondir;
+    return replace_dir_patterns(daemondir);
 }
 
 string user::log_dir()
 {
-    return logdir;
+    return replace_dir_patterns(logdir);
 }
 
 vector<string> user::config_files()
