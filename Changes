@@ -1,3 +1,15 @@
+daemon-manager (1.2.2)
+
+  * Fixed logs not being created in their directories.
+
+  * Fixed not creating user config/log directories.
+
+  * Fixed HOME, LOGNAME, PATH not being able to be overridden by the config.
+
+  * Fixed HOME, LOGNAME not being the `run_as` user.
+
+ -- David Caldwell <david@porkrind.org>  Mon, 13 Feb 2023 02:15:11 -0800
+
 daemon-manager (1.2.1)
 
   * Small documentation change: forgot to document the `edit` command in
